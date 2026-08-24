@@ -1,0 +1,50 @@
+[
+  {
+    "id": "obs-001",
+    "station_id": "station-a1",
+    "dataset_id": "demo-arabian-sea-observations",
+    "timestamp": "2026-08-24T02:00:00Z",
+    "latitude": 12.8,
+    "longitude": 60.4,
+    "depth": 0.0,
+    "temperature": 28.9,
+    "salinity": 35.2,
+    "current_u": 0.31,
+    "current_v": -0.11,
+    "source_type": "buoy",
+    "source_name": "demo-buoy-a1",
+    "quality_flag": "demo"
+  },
+  {
+    "id": "obs-002",
+    "station_id": "station-a2",
+    "dataset_id": "demo-arabian-sea-observations",
+    "timestamp": "2026-08-24T05:00:00Z",
+    "latitude": 14.7,
+    "longitude": 62.9,
+    "depth": 100.0,
+    "temperature": 23.0,
+    "salinity": 35.5,
+    "current_u": 0.23,
+    "current_v": 0.04,
+    "source_type": "argo",
+    "source_name": "demo-argo-a2",
+    "quality_flag": "demo"
+  },
+  {
+    "id": "obs-003",
+    "station_id": "station-a3",
+    "dataset_id": "demo-arabian-sea-observations",
+    "timestamp": "2026-08-24T06:00:00Z",
+    "latitude": 17.2,
+    "longitude": 67.1,
+    "depth": 500.0,
+    "temperature": 18.4,
+    "salinity": 35.7,
+    "current_u": 0.09,
+    "current_v": 0.01,
+    "source_type": "mooring",
+    "source_name": "demo-mooring-a3",
+    "quality_flag": "demo"
+  }
+]

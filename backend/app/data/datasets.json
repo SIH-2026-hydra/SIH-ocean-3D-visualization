@@ -1,0 +1,64 @@
+[
+  {
+    "dataset_id": "demo-arabian-sea-model",
+    "dataset_name": "Arabian Sea Demo Model",
+    "description": "Demo/Synthetic Dataset for the SIH ocean 3D prototype",
+    "source": "Synthetic model generator",
+    "source_type": "model",
+    "spatial_coverage": {
+      "min_latitude": 12.0,
+      "max_latitude": 18.0,
+      "min_longitude": 58.0,
+      "max_longitude": 68.0
+    },
+    "time_range": {
+      "start": "2026-08-24T00:00:00Z",
+      "end": "2026-08-24T12:00:00Z"
+    },
+    "resolution": "3 locations x 3 depths x 2 timestamps",
+    "variables": ["temperature", "salinity", "current_u", "current_v"],
+    "units": {
+      "temperature": "C",
+      "salinity": "PSU",
+      "depth": "m",
+      "current_u": "m/s",
+      "current_v": "m/s",
+      "latitude": "decimal degrees",
+      "longitude": "decimal degrees",
+      "time": "UTC"
+    },
+    "last_updated": "2026-08-24T00:00:00Z",
+    "is_synthetic": true
+  },
+  {
+    "dataset_id": "demo-arabian-sea-observations",
+    "dataset_name": "Arabian Sea Demo Observations",
+    "description": "Demo/Synthetic Dataset for in-situ observation prototype records",
+    "source": "Synthetic observation generator",
+    "source_type": "observation",
+    "spatial_coverage": {
+      "min_latitude": 11.5,
+      "max_latitude": 18.5,
+      "min_longitude": 57.5,
+      "max_longitude": 68.5
+    },
+    "time_range": {
+      "start": "2026-08-24T02:00:00Z",
+      "end": "2026-08-24T12:00:00Z"
+    },
+    "resolution": "3 observations x 3 depths",
+    "variables": ["temperature", "salinity", "current_u", "current_v"],
+    "units": {
+      "temperature": "C",
+      "salinity": "PSU",
+      "depth": "m",
+      "current_u": "m/s",
+      "current_v": "m/s",
+      "latitude": "decimal degrees",
+      "longitude": "decimal degrees",
+      "time": "UTC"
+    },
+    "last_updated": "2026-08-24T00:00:00Z",
+    "is_synthetic": true
+  }
+]
