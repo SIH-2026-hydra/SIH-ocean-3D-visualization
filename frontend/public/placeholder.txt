@@ -1,0 +1,1 @@
+/* public directory - reserved for static assets */
