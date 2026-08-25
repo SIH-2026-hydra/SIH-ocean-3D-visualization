@@ -8,9 +8,11 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint . --ext .js,.jsx",
+    "cesium:assets": "node scripts/copyCesiumAssets.js",
+    "postinstall": "npm run cesium:assets",
+    "dev": "npm run cesium:assets && vite",
+    "build": "npm run cesium:assets && vite build",
+    "lint": "eslint .",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "preview": "vite preview"
   },

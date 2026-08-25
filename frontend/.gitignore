@@ -7,6 +7,9 @@ yarn-error.log*
 # Vite build output
 dist/
 
+# Generated Cesium runtime assets
+public/cesium/
+
 # Environment
 .env
 .env.local

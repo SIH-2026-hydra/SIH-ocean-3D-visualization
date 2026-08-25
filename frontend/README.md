@@ -109,6 +109,8 @@ frontend/
 ├── index.html              # HTML entry point
 ├── package.json            # npm manifest
 ├── package-lock.json       # Dependency lock (committed to Git)
+├── scripts/
+│   └── copyCesiumAssets.js # Generates public Cesium runtime assets
 ├── vite.config.js          # Vite configuration
 └── README.md               # This file
 ```
@@ -124,10 +126,13 @@ frontend/
 
 CesiumJS requires runtime assets (Workers, Assets, Widgets, ThirdParty) to be available during development and production.
 
-**Installation:**
+**Installation and generation:**
 ```powershell
-npm install cesium
+npm install
+npm run cesium:assets
 ```
+
+`npm install` runs the `postinstall` hook, which copies `Assets`, `ThirdParty`, `Widgets`, and `Workers` from `node_modules/cesium/Build/Cesium` into `public/cesium`. The `dev` and `build` scripts repeat this generation so deleted assets are automatically restored.
 
 **Import and usage in components:**
 ```javascript
@@ -138,7 +143,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 const viewer = new Cesium.Viewer('cesiumContainer');
 ```
 
-Vite resolves Cesium assets from `node_modules/cesium` automatically. No manual asset copying is required. The build system handles asset bundling correctly.
+Vite serves the generated files from `/cesium/`, controlled by `CESIUM_BASE_URL` in `vite.config.js`. Production builds emit the same tree under `dist/cesium/`. Cesium runtime resources must therefore resolve from `/cesium/...`, never from Vite's optimized dependency paths.
 
 ## Global Geographic Architecture
 

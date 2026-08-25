@@ -4,6 +4,9 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 export default [
   {
+    ignores: ['dist/**', 'public/cesium/**'],
+  },
+  {
     files: ['**/*.js', '**/*.jsx'],
     languageOptions: {
       ecmaVersion: 2024,
@@ -44,6 +47,14 @@ export default [
     files: ['src/config/cesium.js', 'src/services/api.js'],
     rules: {
       'no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+      },
     },
   },
 ];
