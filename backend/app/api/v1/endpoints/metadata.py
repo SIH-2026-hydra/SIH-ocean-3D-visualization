@@ -12,6 +12,7 @@ service = OceanDataService(repository)
 def get_metadata() -> dict[str, object]:
     try:
         records = service.get_dataset_metadata()
+        discovery = service.get_ocean_discovery()
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -24,5 +25,6 @@ def get_metadata() -> dict[str, object]:
             'sourceType': 'dataset',
             'isSynthetic': True,
         },
+        'discovery': discovery,
         'data': records,
     }

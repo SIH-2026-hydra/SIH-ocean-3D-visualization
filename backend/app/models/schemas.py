@@ -11,8 +11,10 @@ class ModelRecord(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    model_id: str
+    model_id: str | None = None
     dataset_id: str
+    source_type: str = 'model'
+    source: str = 'demo-synthetic-model'
     timestamp: datetime
     latitude: float = Field(ge=-90.0, le=90.0)
     longitude: float = Field(ge=-180.0, le=180.0)
@@ -21,7 +23,6 @@ class ModelRecord(BaseModel):
     salinity: float | None = None
     current_u: float | None = None
     current_v: float | None = None
-    source: str = 'synthetic-model'
 
     @field_validator('timestamp')
     @classmethod
@@ -36,8 +37,8 @@ class ObservationRecord(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    id: str
-    station_id: str
+    id: str | None = None
+    station_id: str | None = None
     dataset_id: str
     timestamp: datetime
     latitude: float = Field(ge=-90.0, le=90.0)

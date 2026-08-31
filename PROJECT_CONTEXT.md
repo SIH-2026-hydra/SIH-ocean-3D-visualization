@@ -7,14 +7,15 @@ SIH26067 - Web-Based Interactive 3D Visualization of Numerical Ocean Models and 
 Prototype 1 with backend foundation and frontend infrastructure.
 
 ## Current phase
-Backend Phase 1 (Complete) + Frontend Infrastructure Phase 1 (Complete)
+Backend Phase 2 (Ocean Data Engine Complete) + Frontend Infrastructure Phase 1 (Complete)
 
 ## Architecture
 - Frontend: React 18 + Vite 5 + CesiumJS 1.120 (global 3D Earth visualization)
 - Backend: FastAPI with FastAPI + Pydantic v2 (API layer)
-- Service layer: OceanDataService (orchestration)
+- Service layer: OceanDataService (orchestration and generic spatial/depth/time filtering)
 - Repository layer: JsonOceanRepository (data abstraction)
-- Data source: small synthetic JSON dataset
+- Data source: deterministic synthetic JSON dataset with global-capable normalized ocean-state schema
+- Data flow: Data Source → Repository/Provider → Normalization → OceanDataService → FastAPI → future Cesium frontend
 
 The frontend renders a global interactive 3D Earth using CesiumJS. The Indian Ocean is the default Prototype 1 demonstration viewport, not a geographic restriction. Future data loading will use regional bounding-box requests to fetch only the visible geographic subset.
 
@@ -35,17 +36,21 @@ The frontend renders a global interactive 3D Earth using CesiumJS. The Indian Oc
 ## Data architecture
 The backend normalizes model and observation records into a consistent schema before exposing them through the API. This keeps future storage backends replaceable without redesigning the frontend contract.
 
+Phase 2 adds a generic ocean-state data layer that treats ocean state as f(latitude, longitude, depth, time) and keeps bathymetry conceptually separate from 4D ocean variables.
+
 ## Current endpoints
 - /api/v1/health
 - /api/v1/model
 - /api/v1/observations
 - /api/v1/metadata
+- /api/v1/ocean
+- /api/v1/ocean/point
 
 ## Current data source
-Synthetic JSON files stored under backend/app/data/
+Deterministic synthetic JSON data stored under backend/app/data/ for a lightweight but visualization-ready Indian Ocean demo grid. Data remains globally capable and is deliberately labelled as synthetic.
 
 ## Synthetic-data status
-All demo records are clearly marked as synthetic and intended for validation only.
+All demo records are clearly marked as synthetic and intended for validation only. No observation or ML prediction values are fabricated for this phase.
 
 ## Completed work
 
@@ -88,5 +93,8 @@ This is a **global** platform:
 - Future data loading will use bounding-box filtering for regional subsets
 - ML/data pipelines may operate on global ocean datasets
 
+## Phase 2 milestone
+Ocean Data Engine is in place with global-capable normalized fields for temperature, salinity, current vectors, temporal filtering, and point queries. The Phase 1 frontend remains untouched, and future visualization work will consume the generic /api/v1/ocean and /api/v1/ocean/point API contracts.
+
 ## Next milestone
-Frontend AI tool will implement the Phase 1 global Cesium globe with initial Indian Ocean camera position, rotation/zoom/pan navigation, and Home/Reset functionality. Backend API integration and ocean data visualization will follow after globe validation.
+Phase 3 will add scientific visualization layers on the existing Cesium globe using the generic ocean API without changing the backend contract.

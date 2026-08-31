@@ -25,6 +25,31 @@ Test status:
 Known issues:
 - None
 
+## Backend Phase 2 (Ocean Data Engine Complete)
+
+Completed:
+- Generic ocean-state API contract for temperature, salinity, and current vectors
+- Spatial/depth/time filtering in service layer before serialization
+- Global-capable normalized records with explicit synthetic provenance
+- /api/v1/ocean and /api/v1/ocean/point endpoints
+- Metadata discovery payload for parameters, units, depths, timestamps, and coverage
+- Deterministic demo grid generator for Indian Ocean coverage with smooth depth/time variation
+- Preserved existing model/observation endpoints and Phase 1 behavior
+
+Coverage:
+- 6 latitudes x 6 longitudes x 5 depths x 6 timestamps = 1080 model records
+- Geographic demo domain: 5°N–30°N, 45°E–95°E
+- Depths: 0, 50, 100, 200, 500 m
+- Timestamps: 2026-08-24T00:00:00Z to 2026-08-24T20:00:00Z at 4-hour intervals
+
+Test status:
+- **21 passed** in 0.55s
+- Ocean queries, point lookups, bounding-box logic, metadata discovery, and Phase 1 compatibility validated
+
+Known issues:
+- No real observations or ML predictions are populated in this phase; those remain null by contract
+- No scientific interpolation or deferred visualization yet
+
 ## Frontend Infrastructure Phase 1 (Complete)
 
 Completed:
