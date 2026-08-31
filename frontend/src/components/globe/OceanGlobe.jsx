@@ -13,7 +13,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 const HOME = Object.freeze({ longitude: 78, latitude: -7, height: 8_400_000 });
 
-const OceanGlobe = forwardRef(function OceanGlobe(_, ref) {
+const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -29,6 +29,7 @@ const OceanGlobe = forwardRef(function OceanGlobe(_, ref) {
   };
 
   useImperativeHandle(ref, () => ({
+    getViewer: () => viewerRef.current,
     home: () => flyHome(),
     zoomIn: () => {
       const viewer = viewerRef.current;
@@ -86,6 +87,9 @@ const OceanGlobe = forwardRef(function OceanGlobe(_, ref) {
         orientation: { heading: 0, pitch: CesiumMath.toRadians(-88), roll: 0 },
       });
       setReady(true);
+      if (typeof onReady === 'function') {
+        onReady(viewer);
+      }
     } catch (error) {
       console.error('Unable to initialize Cesium globe:', error);
     }
@@ -95,7 +99,7 @@ const OceanGlobe = forwardRef(function OceanGlobe(_, ref) {
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
       if (viewerRef.current === viewer) viewerRef.current = null;
     };
-  }, []);
+  }, [onReady]);
 
   return (
     <div className="globe-stage" aria-label="Interactive global 3D Earth">

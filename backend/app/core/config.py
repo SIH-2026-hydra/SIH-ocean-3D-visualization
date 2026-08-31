@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = '/api/v1'
     host: str = '127.0.0.1'
     port: int = 8000
-    frontend_origin: str = 'http://localhost:5173'
+    frontend_origin: str = 'http://127.0.0.1:5173'
 
     model_config = SettingsConfigDict(
         env_file='.env',

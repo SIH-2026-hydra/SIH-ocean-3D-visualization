@@ -96,5 +96,8 @@ This is a **global** platform:
 ## Phase 2 milestone
 Ocean Data Engine is in place with global-capable normalized fields for temperature, salinity, current vectors, temporal filtering, and point queries. The Phase 1 frontend remains untouched, and future visualization work will consume the generic /api/v1/ocean and /api/v1/ocean/point API contracts.
 
+## Phase 4 milestone
+Point inspection is added for user-driven click queries against the existing /api/v1/ocean/point endpoint. The selection flow uses the current time/depth state, resolves clicked globe coordinates with Cesium, updates a single selected-location marker, and renders a glass inspector panel without changing the underlying backend contract or the existing viewer architecture.
+
 ## Next milestone
-Phase 3 will add scientific visualization layers on the existing Cesium globe using the generic ocean API without changing the backend contract.
+Phase 5 will be reserved for the next extension after the point inspector and its verification are complete.

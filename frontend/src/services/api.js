@@ -1,17 +1,66 @@
-/**
- * Ocean Intelligence API Service
- *
- * Reserved for Prototype 1 Phase 2.
- *
- * Future responsibilities:
- * - FastAPI communication
- * - geographic bounding-box queries
- * - temperature-data retrieval
- * - depth/time filtering
- * - normalized API responses
- *
- * No backend requests are required during Frontend Phase 1.
- */
-
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
+  import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1';
+
+function buildQueryString(params) {
+  const entries = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+
+  return entries.length ? `?${entries.join('&')}` : '';
+}
+
+async function requestJson(url) {
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = payload?.detail || payload?.message || 'API request failed.';
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+export async function getOceanData({
+  parameter = 'temperature',
+  depth,
+  time,
+  minLat,
+  maxLat,
+  minLon,
+  maxLon,
+  source,
+} = {}) {
+  const query = buildQueryString({
+    parameter,
+    depth,
+    time,
+    min_lat: minLat,
+    max_lat: maxLat,
+    min_lon: minLon,
+    max_lon: maxLon,
+    source,
+  });
+
+  return requestJson(`${API_BASE_URL}/ocean${query}`);
+}
+
+export async function getOceanPoint({
+  lat,
+  lon,
+  depth,
+  time,
+} = {}) {
+  const query = buildQueryString({
+    lat,
+    lon,
+    depth,
+    time,
+  });
+
+  return requestJson(`${API_BASE_URL}/ocean/point${query}`);
+}
+
+export async function getOceanMetadata() {
+  return requestJson(`${API_BASE_URL}/metadata`);
+}
