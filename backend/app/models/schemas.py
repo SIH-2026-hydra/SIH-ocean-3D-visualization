@@ -75,3 +75,18 @@ class DatasetMetadata(BaseModel):
     units: dict[str, str]
     last_updated: str
     is_synthetic: bool = True
+
+
+class BathymetryRecord(BaseModel):
+    """Static geographic bathymetry/seafloor depth record (no time/depth dependence)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    bathymetry_id: str | None = None
+    dataset_id: str
+    source_type: str = 'bathymetry'
+    source: str = 'demo-synthetic-bathymetry'
+    latitude: float = Field(ge=-90.0, le=90.0)
+    longitude: float = Field(ge=-180.0, le=180.0)
+    seafloor_depth: float = Field(ge=0.0)
+    is_land: bool = False

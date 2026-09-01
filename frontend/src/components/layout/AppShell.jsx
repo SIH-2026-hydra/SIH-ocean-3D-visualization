@@ -16,9 +16,9 @@ import DepthControl from '../controls/DepthControl';
 import TimeControl from '../controls/TimeControl';
 import ParameterControl from '../controls/ParameterControl';
 import { getOceanData, getOceanMetadata, getOceanPoint } from '../../services/api';
+import { getBathymetryPoint } from '../../services/bathymetryApi';
 import { getTemperatureRange } from '../../utils/temperatureColorScale';
 import { getSalinityColor } from '../../utils/salinityColorScale';
-
 const DEFAULT_TEMPERATURE_TIME = '2026-08-24T00:00:00Z';
 const DEMO_BOUNDS = {
   minLat: 5,
@@ -52,10 +52,13 @@ export default function AppShell() {
   const [pointData, setPointData] = useState(null);
   const [pointLoading, setPointLoading] = useState(false);
   const [pointError, setPointError] = useState('');
+  const [bathymetry, setBathymetry] = useState(null);
+  const [bathymetryUnavailable, setBathymetryUnavailable] = useState(false);
   const [selectedDepth, setSelectedDepth] = useState(0);
   const [selectedParameter, setSelectedParameter] = useState('temperature');
   const temperatureRequestRef = useRef(null);
   const pointRequestRef = useRef(null);
+  const bathymetryRequestRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +106,8 @@ export default function AppShell() {
     async function loadTemperature() {
       setLoading(true);
       setError('');
+      setTemperatureData([]);
+      setTemperatureMetadata({});
 
       try {
         const result = await getOceanData({
@@ -166,7 +171,6 @@ export default function AppShell() {
 
     const nextLocation = { latitude, longitude };
     setSelectedLocation(nextLocation);
-    loadPoint(nextLocation);
   };
 
   const loadPoint = async (location) => {
@@ -197,7 +201,33 @@ export default function AppShell() {
 
   useEffect(() => {
     if (selectedLocation) loadPoint(selectedLocation);
-  }, [selectedDepth, selectedTime]);
+  }, [selectedDepth, selectedLocation, selectedTime]);
+
+  useEffect(() => {
+    if (!selectedLocation) return undefined;
+
+    bathymetryRequestRef.current?.abort();
+    const controller = new AbortController();
+    bathymetryRequestRef.current = controller;
+    setBathymetry(null);
+    setBathymetryUnavailable(false);
+
+    getBathymetryPoint(selectedLocation.latitude, selectedLocation.longitude, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) {
+          setBathymetry(result);
+          setBathymetryUnavailable(result === null);
+        }
+      })
+      .catch((fetchError) => {
+        if (fetchError.name !== 'AbortError') {
+          setBathymetryUnavailable(true);
+          console.warn('Bathymetry unavailable:', fetchError);
+        }
+      });
+
+    return () => controller.abort();
+  }, [selectedLocation]);
 
   useEffect(() => {
     const currentViewer = viewer || globeRef.current?.getViewer?.();
@@ -245,7 +275,7 @@ export default function AppShell() {
         />
       )}
       {viewer && selectedParameter === 'salinity' && (
-        <ScalarFieldLayer viewer={viewer} data={temperatureData} colorScale={getSalinityColor} selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
+        <ScalarFieldLayer viewer={viewer} data={temperatureData} colorScale={getSalinityColor} parameter="salinity" selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
       )}
       {viewer && selectedParameter === 'current' && (
         <CurrentVectorLayer viewer={viewer} data={temperatureData} selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
@@ -268,7 +298,7 @@ export default function AppShell() {
         </div>
         <div className="topbar-meta">
           <div className="prototype-badge"><span className="status-pulse" />Prototype Environment</div>
-          <div className="phase-chip"><span>Phase 07</span><b>Ocean Variables</b></div>
+          <div className="phase-chip"><span>Phase 08A</span><b>Bathymetry Foundation</b></div>
         </div>
       </header>
 
@@ -318,11 +348,15 @@ export default function AppShell() {
         <OceanInspector
           selectedLocation={selectedLocation}
           pointData={pointData}
+          bathymetry={bathymetry}
+          bathymetryUnavailable={bathymetryUnavailable}
           loading={pointLoading}
           error={pointError}
           onClose={() => {
             setSelectedLocation(null);
             setPointData(null);
+            setBathymetry(null);
+            setBathymetryUnavailable(false);
             setPointError('');
           }}
         />

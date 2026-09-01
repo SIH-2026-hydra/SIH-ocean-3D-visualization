@@ -18,3 +18,7 @@ class BaseOceanRepository(ABC):
     @abstractmethod
     def get_dataset_metadata(self) -> list[dict[str, Any]]:
         """Return dataset metadata records."""
+
+    @abstractmethod
+    def get_bathymetry_records(self) -> list[dict[str, Any]]:
+        """Return bathymetry records (static geographic data)."""

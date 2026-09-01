@@ -124,6 +124,12 @@ def test_ocean_point_outside_coverage():
     assert response.status_code == 404
 
 
+def test_ocean_point_below_local_seafloor_is_unavailable():
+    response = client.get('/api/v1/ocean/point?lat=10&lon=55&depth=8000&time=2026-08-24T00:00:00Z')
+    assert response.status_code == 400
+    assert 'below the local seafloor' in response.json()['detail']
+
+
 def test_metadata_exposes_ocean_discovery():
     response = client.get('/api/v1/metadata')
     assert response.status_code == 200

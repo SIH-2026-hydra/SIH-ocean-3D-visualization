@@ -49,7 +49,7 @@ function interpolate(targetLat, targetLon, lookup) {
   return values[0] * (1 - latRatio) * (1 - lonRatio) + values[1] * (1 - latRatio) * lonRatio + values[2] * latRatio * (1 - lonRatio) + values[3] * latRatio * lonRatio;
 }
 
-export default function ScalarFieldLayer({ viewer, data = [], colorScale, selectedTimestamp, selectedDepth = 0 }) {
+export default function ScalarFieldLayer({ viewer, data = [], colorScale, parameter, selectedTimestamp, selectedDepth = 0 }) {
   const primitiveRef = useRef(null);
   const cells = useMemo(() => {
     if (!data.length) return [];
@@ -83,8 +83,20 @@ export default function ScalarFieldLayer({ viewer, data = [], colorScale, select
 
   useEffect(() => {
     if (!viewer || viewer.isDestroyed()) return undefined;
-    if (primitiveRef.current) viewer.scene.primitives.remove(primitiveRef.current);
-    if (!cells.length) return undefined;
+    const primitives = viewer.scene?.primitives;
+    if (!primitives) return undefined;
+
+    const previousPrimitive = primitiveRef.current;
+    if (previousPrimitive) {
+      primitives.remove(previousPrimitive);
+      primitiveRef.current = null;
+    }
+
+    if (!cells.length) {
+      viewer.scene.requestRender();
+      return undefined;
+    }
+
     const geometryInstances = cells.map((cell) => new GeometryInstance({
       geometry: new RectangleGeometry({ rectangle: Rectangle.fromDegrees(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat), vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT }),
       attributes: { color: ColorGeometryInstanceAttribute.fromColor(Color.fromCssColorString(cell.color)) },
@@ -94,15 +106,18 @@ export default function ScalarFieldLayer({ viewer, data = [], colorScale, select
       appearance: new PerInstanceColorAppearance({ closed: true, translucent: true, flat: true }),
       asynchronous: false,
     });
-    viewer.scene.primitives.add(primitive);
+    primitives.add(primitive);
     primitiveRef.current = primitive;
+    viewer.scene.requestRender();
+
     return () => {
-      if (primitiveRef.current) {
-        viewer.scene.primitives.remove(primitiveRef.current);
+      if (primitiveRef.current === primitive && !viewer.isDestroyed() && viewer.scene?.primitives) {
+        viewer.scene.primitives.remove(primitive);
         primitiveRef.current = null;
+        viewer.scene.requestRender();
       }
     };
-  }, [cells, selectedDepth, selectedTimestamp, viewer]);
+  }, [cells, parameter, selectedDepth, selectedTimestamp, viewer]);
 
   return null;
 }

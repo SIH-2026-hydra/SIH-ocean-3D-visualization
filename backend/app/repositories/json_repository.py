@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.models.schemas import DatasetMetadata, ModelRecord, ObservationRecord
+from app.models.schemas import BathymetryRecord, DatasetMetadata, ModelRecord, ObservationRecord
 from app.repositories.base import BaseOceanRepository
 
 
@@ -47,4 +47,10 @@ class JsonOceanRepository(BaseOceanRepository):
         return [
             DatasetMetadata.model_validate(item).model_dump(mode='json')
             for item in self._load_json('datasets.json')
+        ]
+
+    def get_bathymetry_records(self) -> list[dict[str, Any]]:
+        return [
+            BathymetryRecord.model_validate(item).model_dump(mode='json')
+            for item in self._load_json('bathymetry.json')
         ]

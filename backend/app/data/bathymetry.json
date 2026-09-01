@@ -1,0 +1,362 @@
+[
+  {
+    "bathymetry_id": "bathy-0001",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 45.0,
+    "seafloor_depth": 4833.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0002",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 55.0,
+    "seafloor_depth": 4738.6,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0003",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 65.0,
+    "seafloor_depth": 4469.4,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0004",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 75.0,
+    "seafloor_depth": 4068.2,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0005",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 85.0,
+    "seafloor_depth": 3598.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0006",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 5.0,
+    "longitude": 95.0,
+    "seafloor_depth": 3134.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0007",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 45.0,
+    "seafloor_depth": 5163.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0008",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 55.0,
+    "seafloor_depth": 5068.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0009",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 65.0,
+    "seafloor_depth": 4799.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0010",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 75.0,
+    "seafloor_depth": 4397.8,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0011",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 85.0,
+    "seafloor_depth": 3927.9,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0012",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 10.0,
+    "longitude": 95.0,
+    "seafloor_depth": 3463.6,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0013",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 45.0,
+    "seafloor_depth": 5471.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0014",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 55.0,
+    "seafloor_depth": 5376.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0015",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 65.0,
+    "seafloor_depth": 5107.1,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0016",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 75.0,
+    "seafloor_depth": 4705.9,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0017",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 85.0,
+    "seafloor_depth": 4236.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0018",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 15.0,
+    "longitude": 95.0,
+    "seafloor_depth": 3771.6,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0019",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 45.0,
+    "seafloor_depth": 5738.2,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0020",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 55.0,
+    "seafloor_depth": 5643.5,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0021",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 65.0,
+    "seafloor_depth": 5374.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0022",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 75.0,
+    "seafloor_depth": 4973.0,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0023",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 85.0,
+    "seafloor_depth": 4503.2,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0024",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 20.0,
+    "longitude": 95.0,
+    "seafloor_depth": 4038.8,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0025",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 45.0,
+    "seafloor_depth": 5949.8,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0026",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 55.0,
+    "seafloor_depth": 5855.1,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0027",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 65.0,
+    "seafloor_depth": 5585.9,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0028",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 75.0,
+    "seafloor_depth": 5184.7,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0029",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 85.0,
+    "seafloor_depth": 4714.8,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0030",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 25.0,
+    "longitude": 95.0,
+    "seafloor_depth": 4250.5,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0031",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 45.0,
+    "seafloor_depth": 6097.2,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0032",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 55.0,
+    "seafloor_depth": 6002.5,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0033",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 65.0,
+    "seafloor_depth": 5733.3,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0034",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 75.0,
+    "seafloor_depth": 5332.1,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0035",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 85.0,
+    "seafloor_depth": 4862.2,
+    "is_land": false
+  },
+  {
+    "bathymetry_id": "bathy-0036",
+    "dataset_id": "demo-indian-ocean-bathymetry",
+    "source_type": "bathymetry",
+    "source": "demo-synthetic-bathymetry",
+    "latitude": 30.0,
+    "longitude": 95.0,
+    "seafloor_depth": 4397.9,
+    "is_land": false
+  }
+]

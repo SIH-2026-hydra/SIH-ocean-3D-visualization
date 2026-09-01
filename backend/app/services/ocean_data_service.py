@@ -4,6 +4,7 @@ import math
 from datetime import datetime, timezone
 
 from app.repositories.base import BaseOceanRepository
+from app.services.bathymetry_service import BathymetryService
 
 
 class OceanDataService:
@@ -168,6 +169,15 @@ class OceanDataService:
         max_lon = coverage.get('max_longitude', 180.0)
         if not (min_lat <= lat <= max_lat and min_lon <= lon <= max_lon):
             raise LookupError('Requested point is outside the available demo coverage.')
+
+        # Bathymetry remains a separate provider, but it supplies local validity
+        # constraints when coverage is available. This avoids fabricating values
+        # below the seafloor while allowing either provider to be replaced later.
+        bathymetry = BathymetryService(self.repository).get_point_bathymetry(lat, lon)
+        if bathymetry and float(depth) > float(bathymetry['seafloor_depth']):
+            raise ValueError(
+                f"Requested depth is below the local seafloor ({bathymetry['seafloor_depth']:.0f} m)."
+            )
 
         time_value = self._normalize_timestamp(timestamp)
         records = list(self.repository.get_model_records())
