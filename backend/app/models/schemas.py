@@ -91,3 +91,31 @@ class BathymetryRecord(BaseModel):
     longitude: float = Field(ge=-180.0, le=180.0)
     seafloor_depth: float = Field(ge=0.0)
     is_land: bool = False
+
+
+class PredictionRecord(BaseModel):
+    """ML prediction output record."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    latitude: float = Field(ge=-90.0, le=90.0)
+    longitude: float = Field(ge=-180.0, le=180.0)
+    depth: float = Field(ge=0.0)
+    timestamp: datetime
+    temperature: float | None = None
+    salinity: float | None = None
+    current_u: float | None = None
+    current_v: float | None = None
+    current_speed: float | None = Field(default=None, ge=0.0)
+    model_id: str = 'prototype-predictor-v1'
+    model_version: str = '1.0'
+    prediction_type: str = 'prototype'
+    source: str = 'prototype-ml-prediction'
+    is_experimental: bool = True
+
+    @field_validator('timestamp')
+    @classmethod
+    def ensure_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)

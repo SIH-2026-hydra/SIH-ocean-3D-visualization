@@ -17,7 +17,7 @@ const formatDepth = (value) => {
   return numericDepth === 0 ? 'Surface · 0 m' : `${numericDepth.toFixed(0)} m`;
 };
 
-export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, loading, error, onClose }) {
+export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, prediction, predictionUnavailableReason, loading, error, onClose }) {
   const requested = selectedLocation || pointData?.requestedLocation || {};
   const matched = pointData?.matchedLocation || {};
   const source = pointData?.source || {};
@@ -69,6 +69,21 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
       { label: 'Source', value: bathymetry.is_synthetic ? 'Demo/Synthetic' : (bathymetry.source || '-') },
     ];
   }, [bathymetry, pointData?.depth]);
+
+  const predictionRows = useMemo(() => {
+    if (!prediction) return [];
+    const current = prediction.current_u != null && prediction.current_v != null
+      ? `${formatMetric(prediction.current_speed ?? Math.hypot(prediction.current_u, prediction.current_v), 3)} m/s`
+      : 'Unavailable';
+    return [
+      { label: 'Temperature', value: prediction.temperature != null ? `${formatMetric(prediction.temperature, 2)} °C` : 'Unavailable' },
+      { label: 'Salinity', value: prediction.salinity != null ? `${formatMetric(prediction.salinity, 2)} PSU` : 'Unavailable' },
+      { label: 'Current Speed', value: current },
+      { label: 'U', value: prediction.current_u != null ? `${formatMetric(prediction.current_u, 3)} m/s` : 'Unavailable' },
+      { label: 'V', value: prediction.current_v != null ? `${formatMetric(prediction.current_v, 3)} m/s` : 'Unavailable' },
+      { label: 'Model', value: `${prediction.model_id} v${prediction.model_version}` },
+    ];
+  }, [prediction]);
 
   if (!selectedLocation && !pointData && !loading && !error) {
     return null;
@@ -177,6 +192,16 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
                 <strong>{metric.value}</strong>
               </div>
             )) : <div className="ocean-inspector__empty">No nearby observation available</div>}
+          </div>
+
+          <div className="ocean-inspector__section">
+            <div className="ocean-inspector__section-head">ML PREDICTION · EXPERIMENTAL</div>
+            {predictionRows.length ? predictionRows.map((metric) => (
+              <div key={metric.label} className="ocean-inspector__row">
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
+            )) : <div className="ocean-inspector__empty">{predictionUnavailableReason === 'below_seafloor' ? 'Unavailable below the local seafloor' : predictionUnavailableReason === 'outside_coverage' ? 'Unavailable outside prototype coverage' : 'Prediction unavailable'}</div>}
           </div>
         </>
       )}

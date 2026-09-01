@@ -20,6 +20,7 @@ import ObservationToggle from '../controls/ObservationToggle';
 import { getOceanData, getOceanMetadata, getOceanPoint } from '../../services/api';
 import { getBathymetryPoint } from '../../services/bathymetryApi';
 import { getNearestObservation, getObservations } from '../../services/observationsApi';
+import { getPointPrediction } from '../../services/predictionsApi';
 import { getTemperatureRange } from '../../utils/temperatureColorScale';
 import { getSalinityColor } from '../../utils/salinityColorScale';
 const DEFAULT_TEMPERATURE_TIME = '2026-08-24T00:00:00Z';
@@ -62,10 +63,13 @@ export default function AppShell() {
   const [selectedObservation, setSelectedObservation] = useState(null);
   const [selectedDepth, setSelectedDepth] = useState(0);
   const [selectedParameter, setSelectedParameter] = useState('temperature');
+  const [prediction, setPrediction] = useState(null);
+  const [predictionUnavailableReason, setPredictionUnavailableReason] = useState(null);
   const temperatureRequestRef = useRef(null);
   const pointRequestRef = useRef(null);
   const bathymetryRequestRef = useRef(null);
   const observationRequestRef = useRef(null);
+  const predictionRequestRef = useRef(null);
   const observationSelectionRef = useRef(null);
 
   useEffect(() => {
@@ -216,6 +220,39 @@ export default function AppShell() {
 
   useEffect(() => {
     if (selectedLocation) loadPoint(selectedLocation);
+  }, [selectedDepth, selectedLocation, selectedTime]);
+
+  useEffect(() => {
+    if (!selectedLocation) {
+      setPrediction(null);
+      setPredictionUnavailableReason(null);
+      return undefined;
+    }
+
+    predictionRequestRef.current?.abort();
+    const controller = new AbortController();
+    predictionRequestRef.current = controller;
+    setPrediction(null);
+    setPredictionUnavailableReason(null);
+
+    getPointPrediction({
+      lat: selectedLocation.latitude,
+      lon: selectedLocation.longitude,
+      depth: selectedDepth,
+      time: selectedTime,
+      signal: controller.signal,
+    })
+      .then((result) => {
+        if (!controller.signal.aborted) {
+          setPrediction(result.prediction);
+          setPredictionUnavailableReason(result.unavailable_reason || null);
+        }
+      })
+      .catch((fetchError) => {
+        if (fetchError.name !== 'AbortError') console.warn('ML prediction unavailable:', fetchError);
+      });
+
+    return () => controller.abort();
   }, [selectedDepth, selectedLocation, selectedTime]);
 
   useEffect(() => {
@@ -388,6 +425,8 @@ export default function AppShell() {
           bathymetry={bathymetry}
           bathymetryUnavailable={bathymetryUnavailable}
           observation={selectedObservation}
+          prediction={prediction}
+          predictionUnavailableReason={predictionUnavailableReason}
           loading={pointLoading}
           error={pointError}
           onClose={() => {
@@ -395,6 +434,8 @@ export default function AppShell() {
             setPointData(null);
             setBathymetry(null);
             setBathymetryUnavailable(false);
+            setPrediction(null);
+            setPredictionUnavailableReason(null);
             setPointError('');
           }}
         />
