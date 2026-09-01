@@ -5,18 +5,53 @@ const COLORS = { argo: '#e8bd65', buoy: '#8fe0ff', mooring: '#be9aff' };
 
 export default function ObservationLayer({ viewer, observations = [], visible, onSelect }) {
   const dataSourceRef = useRef(null);
+  const handlerRef = useRef(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
+  // Manage data source lifecycle: create once, update as needed
   useEffect(() => {
-    if (!viewer || viewer.isDestroyed() || !visible) return undefined;
-    const dataSource = new CustomDataSource('observation-platforms');
-    dataSourceRef.current = dataSource;
-    viewer.dataSources.add(dataSource);
+    if (!viewer || viewer.isDestroyed()) {
+      return undefined;
+    }
+
+    // Create data source if it doesn't exist
+    if (!dataSourceRef.current) {
+      dataSourceRef.current = new CustomDataSource('observation-platforms');
+      viewer.dataSources.add(dataSourceRef.current);
+    }
+
+    return () => {
+      // On unmount or viewer destruction, clean up the data source
+      if (dataSourceRef.current && !viewer.isDestroyed()) {
+        viewer.dataSources.remove(dataSourceRef.current);
+      }
+      dataSourceRef.current = null;
+    };
+  }, [viewer]);
+
+  // Update entities when observations or visibility changes
+  useEffect(() => {
+    if (!dataSourceRef.current || !viewer || viewer.isDestroyed()) {
+      return undefined;
+    }
+
+    // Clear existing entities
+    dataSourceRef.current.entities.removeAll();
+
+    // If not visible, keep data source but don't add entities
+    if (!visible) {
+      return undefined;
+    }
+
+    // Add observation entities
     const platforms = new Map();
     observations.forEach((observation) => {
-      if (!platforms.has(observation.platform_id)) platforms.set(observation.platform_id, observation);
+      if (!platforms.has(observation.platform_id)) {
+        platforms.set(observation.platform_id, observation);
+      }
     });
+
     platforms.forEach((observation) => {
       const color = COLORS[observation.platform_type] || '#dffcff';
       const entity = new Entity({
@@ -29,22 +64,45 @@ export default function ObservationLayer({ viewer, observations = [], visible, o
         },
       });
       entity.properties = { observation };
-      dataSource.entities.add(entity);
+      dataSourceRef.current.entities.add(entity);
     });
-    const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-    handler.setInputAction((movement) => {
-      const picked = viewer.scene.pick(movement.position);
-      const observation = picked?.id?.properties?.observation;
-      if (observation) onSelectRef.current?.(observation);
-    }, ScreenSpaceEventType.LEFT_CLICK);
-    viewer.scene.requestRender();
-    return () => {
-      handler.destroy();
-      if (!viewer.isDestroyed() && !dataSource.isDestroyed()) viewer.dataSources.remove(dataSource, true);
-      if (dataSourceRef.current === dataSource) dataSourceRef.current = null;
+
+    if (viewer.scene) {
       viewer.scene.requestRender();
+    }
+
+    return undefined;
+  }, [observations, visible, viewer]);
+
+  // Manage click handler lifecycle
+  useEffect(() => {
+    if (!viewer || viewer.isDestroyed() || !dataSourceRef.current) {
+      return undefined;
+    }
+
+    const scene = viewer.scene;
+    if (!scene) {
+      return undefined;
+    }
+
+    const handler = new ScreenSpaceEventHandler(scene.canvas);
+    handlerRef.current = handler;
+
+    handler.setInputAction((movement) => {
+      const picked = scene.pick(movement.position);
+      const observation = picked?.id?.properties?.observation;
+      if (observation) {
+        onSelectRef.current?.(observation);
+      }
+    }, ScreenSpaceEventType.LEFT_CLICK);
+
+    return () => {
+      if (handlerRef.current === handler) {
+        handler.destroy();
+        handlerRef.current = null;
+      }
     };
-  }, [observations, viewer, visible]);
+  }, [viewer]);
 
   return null;
 }
