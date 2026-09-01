@@ -20,19 +20,24 @@ const formatDepth = (value) => {
 export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, loading, error, onClose }) {
   const requested = selectedLocation || pointData?.requestedLocation || {};
   const matched = pointData?.matchedLocation || {};
-  const model = pointData?.model || {};
   const source = pointData?.source || {};
 
-  const temperatureRows = useMemo(() => [
-    { label: 'Temperature', value: model.temperature != null ? `${formatMetric(model.temperature, 2)} °C` : '—' },
-    { label: 'Salinity', value: model.salinity != null ? `${formatMetric(model.salinity, 2)} PSU` : '—' },
-  ], [model]);
+  const temperatureRows = useMemo(() => {
+    const model = pointData?.model || {};
+    return [
+      { label: 'Temperature', value: model.temperature != null ? `${formatMetric(model.temperature, 2)} °C` : '—' },
+      { label: 'Salinity', value: model.salinity != null ? `${formatMetric(model.salinity, 2)} PSU` : '—' },
+    ];
+  }, [pointData?.model]);
 
-  const currentRows = useMemo(() => [
-    { label: 'Speed', value: model.currentSpeed != null ? `${formatMetric(model.currentSpeed, 3)} m/s` : '—' },
-    { label: 'U', value: model.currentU != null ? `${formatMetric(model.currentU, 3)} m/s` : '—' },
-    { label: 'V', value: model.currentV != null ? `${formatMetric(model.currentV, 3)} m/s` : '—' },
-  ], [model]);
+  const currentRows = useMemo(() => {
+    const model = pointData?.model || {};
+    return [
+      { label: 'Speed', value: model.currentSpeed != null ? `${formatMetric(model.currentSpeed, 3)} m/s` : '—' },
+      { label: 'U', value: model.currentU != null ? `${formatMetric(model.currentU, 3)} m/s` : '—' },
+      { label: 'V', value: model.currentV != null ? `${formatMetric(model.currentV, 3)} m/s` : '—' },
+    ];
+  }, [pointData?.model]);
 
   const observationRows = useMemo(() => {
     if (!observation) return [];
@@ -163,6 +168,16 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
               <strong>{source.sourceType || 'Model'} · {source.source || 'Demo/Synthetic'}</strong>
             </div>
           </div>
+
+          <div className="ocean-inspector__section">
+            <div className="ocean-inspector__section-head">OBSERVATION</div>
+            {observationRows.length ? observationRows.map((metric) => (
+              <div key={metric.label} className="ocean-inspector__row">
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
+            )) : <div className="ocean-inspector__empty">No nearby observation available</div>}
+          </div>
         </>
       )}
 
@@ -175,16 +190,6 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
           <div className="ocean-inspector__row">
             <span>Depth</span>
             <strong>Unavailable</strong>
-          </div>
-
-          <div className="ocean-inspector__section">
-            <div className="ocean-inspector__section-head">OBSERVATION</div>
-            {observationRows.length ? observationRows.map((metric) => (
-              <div key={metric.label} className="ocean-inspector__row">
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-              </div>
-            )) : <div className="ocean-inspector__empty">No nearby observation available</div>}
           </div>
         </div>
       )}

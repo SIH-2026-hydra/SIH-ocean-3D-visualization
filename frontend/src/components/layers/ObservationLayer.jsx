@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Cartesian3, Color, CustomDataSource, Entity, ScreenSpaceEventHandler, ScreenSpaceEventType, VerticalOrigin } from 'cesium';
+import { Cartesian3, CustomDataSource, Entity, ScreenSpaceEventHandler, ScreenSpaceEventType, VerticalOrigin } from 'cesium';
 
 const COLORS = { argo: '#e8bd65', buoy: '#8fe0ff', mooring: '#be9aff' };
 

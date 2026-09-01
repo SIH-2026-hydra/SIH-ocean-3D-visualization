@@ -334,7 +334,7 @@ export default function AppShell() {
         </div>
         <div className="topbar-meta">
           <div className="prototype-badge"><span className="status-pulse" />Prototype Environment</div>
-          <div className="phase-chip"><span>Phase 08A</span><b>Bathymetry Foundation</b></div>
+          <div className="phase-chip"><span>Phase 08B</span><b>In-Situ Observations</b></div>
         </div>
       </header>
 
@@ -413,7 +413,7 @@ export default function AppShell() {
       <footer className="mission-strip">
         <div><span className="mission-dot" />GLOBAL EXPLORATION</div>
         <span className="mission-separator" />
-        <div>PHASE 7 · OCEAN VARIABLES</div>
+        <div>PHASE 8B · IN-SITU OBSERVATIONS</div>
         <span className="mission-spacer" />
         <div className="interaction-hint"><span>DRAG</span> rotate <span>SCROLL</span> zoom</div>
       </footer>
