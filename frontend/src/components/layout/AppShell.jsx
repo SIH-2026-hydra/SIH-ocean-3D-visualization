@@ -5,13 +5,19 @@ import {
   ScreenSpaceEventType,
 } from 'cesium';
 import TemperatureLayer from '../layers/TemperatureLayer';
+import ScalarFieldLayer from '../layers/ScalarFieldLayer';
+import CurrentVectorLayer from '../layers/CurrentVectorLayer';
 import TemperatureLegend from '../legends/TemperatureLegend';
 import GlobeControls from '../globe/GlobeControls';
 import OceanGlobe from '../globe/OceanGlobe';
 import SelectedLocationMarker from '../globe/SelectedLocationMarker';
 import OceanInspector from '../inspector/OceanInspector';
+import DepthControl from '../controls/DepthControl';
+import TimeControl from '../controls/TimeControl';
+import ParameterControl from '../controls/ParameterControl';
 import { getOceanData, getOceanMetadata, getOceanPoint } from '../../services/api';
 import { getTemperatureRange } from '../../utils/temperatureColorScale';
+import { getSalinityColor } from '../../utils/salinityColorScale';
 
 const DEFAULT_TEMPERATURE_TIME = '2026-08-24T00:00:00Z';
 const DEMO_BOUNDS = {
@@ -20,6 +26,7 @@ const DEMO_BOUNDS = {
   minLon: 45,
   maxLon: 95,
 };
+const DEFAULT_DEPTHS = [0, 50, 100, 200, 500];
 
 function OceanMark() {
   return (
@@ -36,14 +43,19 @@ export default function AppShell() {
   const [viewer, setViewer] = useState(null);
   const [temperatureData, setTemperatureData] = useState([]);
   const [temperatureMetadata, setTemperatureMetadata] = useState({});
+  const [availableDepths, setAvailableDepths] = useState(DEFAULT_DEPTHS);
+  const [availableTimestamps, setAvailableTimestamps] = useState([DEFAULT_TEMPERATURE_TIME]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedTimestamp, setSelectedTimestamp] = useState(DEFAULT_TEMPERATURE_TIME);
+  const [selectedTime, setSelectedTime] = useState(DEFAULT_TEMPERATURE_TIME);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [pointData, setPointData] = useState(null);
   const [pointLoading, setPointLoading] = useState(false);
   const [pointError, setPointError] = useState('');
-  const selectedDepth = 0;
+  const [selectedDepth, setSelectedDepth] = useState(0);
+  const [selectedParameter, setSelectedParameter] = useState('temperature');
+  const temperatureRequestRef = useRef(null);
+  const pointRequestRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,10 +65,20 @@ export default function AppShell() {
         const metadataResponse = await getOceanMetadata();
         const discovery = metadataResponse?.discovery;
         const timestamps = discovery?.timestamps || [DEFAULT_TEMPERATURE_TIME];
-        const earliest = timestamps[0] || DEFAULT_TEMPERATURE_TIME;
+        const normalizedTimestamps = timestamps.filter((timestamp) => typeof timestamp === 'string').sort();
+        const earliest = normalizedTimestamps[0] || DEFAULT_TEMPERATURE_TIME;
+        const depths = (discovery?.depths || DEFAULT_DEPTHS)
+          .map(Number)
+          .filter(Number.isFinite)
+          .sort((first, second) => first - second);
 
         if (!cancelled) {
-          setSelectedTimestamp(earliest);
+          setSelectedTime(earliest);
+          setAvailableTimestamps(normalizedTimestamps.length ? normalizedTimestamps : [DEFAULT_TEMPERATURE_TIME]);
+          if (depths.length) {
+            setAvailableDepths(depths);
+            setSelectedDepth((currentDepth) => (depths.includes(currentDepth) ? currentDepth : depths[0]));
+          }
         }
       } catch (loadError) {
         console.warn('Unable to fetch ocean metadata:', loadError);
@@ -74,6 +96,9 @@ export default function AppShell() {
     if (!viewer || viewer.isDestroyed()) return undefined;
 
     let cancelled = false;
+    temperatureRequestRef.current?.abort();
+    const controller = new AbortController();
+    temperatureRequestRef.current = controller;
 
     async function loadTemperature() {
       setLoading(true);
@@ -81,9 +106,10 @@ export default function AppShell() {
 
       try {
         const result = await getOceanData({
-          parameter: 'temperature',
+          parameter: selectedParameter,
           depth: selectedDepth,
-          time: selectedTimestamp,
+          time: selectedTime,
+          signal: controller.signal,
           minLat: DEMO_BOUNDS.minLat,
           maxLat: DEMO_BOUNDS.maxLat,
           minLon: DEMO_BOUNDS.minLon,
@@ -91,14 +117,16 @@ export default function AppShell() {
         });
 
         if (!cancelled) {
-          setTemperatureData(Array.isArray(result?.data) ? result.data : []);
+          const nextData = Array.isArray(result?.data) ? result.data : [];
+          setTemperatureData(nextData);
           setTemperatureMetadata(result?.metadata || {});
+          if (!nextData.length) setError(`${selectedParameter} data unavailable for this depth and time.`);
         }
       } catch (fetchError) {
-        if (!cancelled) {
+        if (!cancelled && fetchError.name !== 'AbortError') {
           setTemperatureData([]);
           setTemperatureMetadata({});
-          setError(fetchError.message || 'Temperature data failed to load.');
+          setError(fetchError.message || `${selectedParameter} data failed to load.`);
         }
       } finally {
         if (!cancelled) {
@@ -111,13 +139,14 @@ export default function AppShell() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [selectedTimestamp, viewer]);
+  }, [selectedParameter, selectedTime, selectedDepth, viewer]);
 
   const legendRange = useMemo(() => {
-    const values = temperatureData.map((item) => Number(item.value)).filter(Number.isFinite);
+    const values = temperatureData.map((item) => Number(selectedParameter === 'current' ? item.speed : item.value)).filter(Number.isFinite);
     return values.length ? getTemperatureRange(values) : { min: 0, max: 0 };
-  }, [temperatureData]);
+  }, [selectedParameter, temperatureData]);
 
   const handleGlobeSelection = async (screenPosition) => {
     const currentViewer = viewer || globeRef.current?.getViewer?.();
@@ -137,26 +166,38 @@ export default function AppShell() {
 
     const nextLocation = { latitude, longitude };
     setSelectedLocation(nextLocation);
+    loadPoint(nextLocation);
+  };
+
+  const loadPoint = async (location) => {
+    pointRequestRef.current?.abort();
+    const controller = new AbortController();
+    pointRequestRef.current = controller;
     setPointError('');
     setPointLoading(true);
     setPointData(null);
 
     try {
       const result = await getOceanPoint({
-        lat: latitude,
-        lon: longitude,
+        lat: location.latitude,
+        lon: location.longitude,
         depth: selectedDepth,
-        time: selectedTimestamp,
+        time: selectedTime,
+        signal: controller.signal,
       });
-
-      setPointData(result);
+      if (!controller.signal.aborted) setPointData(result);
     } catch (fetchError) {
-      setPointError(fetchError.message || 'Ocean data unavailable for this location');
-      setPointData(null);
+      if (fetchError.name !== 'AbortError' && !controller.signal.aborted) {
+        setPointError(fetchError.message || 'Ocean data unavailable for this location');
+      }
     } finally {
-      setPointLoading(false);
+      if (!controller.signal.aborted) setPointLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedLocation) loadPoint(selectedLocation);
+  }, [selectedDepth, selectedTime]);
 
   useEffect(() => {
     const currentViewer = viewer || globeRef.current?.getViewer?.();
@@ -189,19 +230,25 @@ export default function AppShell() {
     }, ScreenSpaceEventType.LEFT_CLICK);
 
     return () => handler.destroy();
-  }, [viewer, selectedTimestamp, selectedDepth]);
+  }, [viewer, selectedTime, selectedDepth]);
 
   return (
     <main className="app-shell">
       <OceanGlobe ref={globeRef} onReady={setViewer} />
-      {viewer && (
+      {viewer && selectedParameter === 'temperature' && (
         <TemperatureLayer
           viewer={viewer}
           data={temperatureData}
           metadata={temperatureMetadata}
-          selectedTimestamp={selectedTimestamp}
+          selectedTimestamp={selectedTime}
           selectedDepth={selectedDepth}
         />
+      )}
+      {viewer && selectedParameter === 'salinity' && (
+        <ScalarFieldLayer viewer={viewer} data={temperatureData} colorScale={getSalinityColor} selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
+      )}
+      {viewer && selectedParameter === 'current' && (
+        <CurrentVectorLayer viewer={viewer} data={temperatureData} selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
       )}
       {viewer && (
         <SelectedLocationMarker
@@ -221,7 +268,7 @@ export default function AppShell() {
         </div>
         <div className="topbar-meta">
           <div className="prototype-badge"><span className="status-pulse" />Prototype Environment</div>
-          <div className="phase-chip"><span>Phase 04</span><b>Point Inspector</b></div>
+          <div className="phase-chip"><span>Phase 07</span><b>Ocean Variables</b></div>
         </div>
       </header>
 
@@ -232,6 +279,22 @@ export default function AppShell() {
         <div><span>Default View</span><strong>Indian Ocean</strong></div>
         <i aria-hidden="true" />
       </section>
+
+      <DepthControl
+        depths={availableDepths}
+        selectedDepth={selectedDepth}
+        onChange={setSelectedDepth}
+        loading={loading || pointLoading}
+      />
+
+      <ParameterControl selectedParameter={selectedParameter} onChange={setSelectedParameter} />
+
+      <TimeControl
+        timestamps={availableTimestamps}
+        selectedTime={selectedTime}
+        onChange={setSelectedTime}
+        loading={loading || pointLoading}
+      />
 
       <GlobeControls
         onHome={() => globeRef.current?.home()}
@@ -269,14 +332,16 @@ export default function AppShell() {
         min={legendRange.min}
         max={legendRange.max}
         selectedDepth={selectedDepth}
-        timestamp={selectedTimestamp}
+        timestamp={selectedTime}
         provenance={temperatureMetadata.sourceType || 'model'}
+        parameter={selectedParameter}
+        unit={selectedParameter === 'temperature' ? '°C' : selectedParameter === 'salinity' ? 'PSU' : 'm/s'}
       />
 
       <footer className="mission-strip">
         <div><span className="mission-dot" />GLOBAL EXPLORATION</div>
         <span className="mission-separator" />
-        <div>PHASE 4 · POINT INSPECTOR</div>
+        <div>PHASE 7 · OCEAN VARIABLES</div>
         <span className="mission-spacer" />
         <div className="interaction-hint"><span>DRAG</span> rotate <span>SCROLL</span> zoom</div>
       </footer>

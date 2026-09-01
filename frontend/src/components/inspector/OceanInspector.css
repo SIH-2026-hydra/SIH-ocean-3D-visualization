@@ -2,9 +2,10 @@
   position: absolute;
   left: 24px;
   top: 182px;
+  bottom: 170px;
   z-index: 14;
   width: min(330px, calc(100vw - 48px));
-  max-height: calc(100dvh - 230px);
+  max-height: calc(100dvh - 370px);
   overflow: auto;
   padding: 14px 14px 12px;
   border: 1px solid rgba(125, 219, 244, 0.18);
@@ -106,6 +107,8 @@
   .ocean-inspector {
     left: 16px;
     top: 166px;
+    bottom: 148px;
     width: min(330px, calc(100vw - 32px));
+    max-height: calc(100dvh - 330px);
   }
 }

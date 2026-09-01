@@ -17,6 +17,7 @@ export default [
         window: 'readonly',
         fetch: 'readonly',
         Promise: 'readonly',
+        AbortController: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: {

@@ -75,6 +75,18 @@ Test status:
 - npm install/build verification deferred (Node.js not available in current environment)
 - Full verification can proceed when Node.js/npm become available: `cd frontend && npm install && npm run lint`
 
+## Frontend Phase 5 (Depth Exploration Complete)
+
+Completed:
+- Shared selectedDepth state across the depth control, temperature API, temperature layer, legend, and point inspector
+- Metadata-driven discrete depths with Surface / 0 m default and demo fallback depths
+- Abortable temperature and point requests to prevent stale rapid-switch results
+- Selected marker location preserved while point values refresh at the new depth
+
+Verification:
+- Editor diagnostics pass for the Phase 5 frontend files
+- npm lint/build and runtime verification require a working Node/npm shell
+
 ## Next milestone
 
 Frontend AI tool to implement Phase 1 Cesium globe:
@@ -83,3 +95,28 @@ Frontend AI tool to implement Phase 1 Cesium globe:
 - Rotation, zoom, pan navigation
 - Home/Reset action
 - Then proceed to backend integration and ocean data visualization
+
+## Frontend Phase 6 (Time Exploration Complete)
+
+Completed:
+- Shared metadata-backed selectedTime state for the timeline, temperature field, legend, and selected point inspector
+- Discrete UTC slider with timestep markers, previous/next controls, and play/pause playback that stops at the final timestep
+- Existing abortable request flow reused for rapid timeline changes without stale temperature or point results
+- Two-level temporal navigation: efficient available-date selector plus selected-date discrete time slider
+- Chronological previous/next and playback cross UTC date boundaries without preloading scientific data
+
+Verification:
+- Editor diagnostics pass for the Phase 6 frontend files
+- npm lint/build and runtime verification require a working Node/npm shell
+
+## Frontend Phase 7 (Salinity + Ocean Current Visualization)
+
+Completed:
+- Shared selectedParameter control for temperature, salinity, and current
+- Reusable ScalarFieldLayer with the existing temperature color scale and a distinct salinity scale
+- Static, subsampled current vectors using backend current_u/current_v values and derived speed
+- Parameter-aware legend while retaining the complete point inspector state
+
+Verification:
+- Editor diagnostics pass for Phase 7 frontend files
+- npm lint/build and runtime verification require a working Node/npm shell

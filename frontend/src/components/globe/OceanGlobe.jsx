@@ -2,10 +2,12 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import {
   Cartesian3,
   Color,
+  Credit,
   EllipsoidTerrainProvider,
   Ion,
   Math as CesiumMath,
   OpenStreetMapImageryProvider,
+  UrlTemplateImageryProvider,
   Viewer,
   ImageryLayer,
 } from 'cesium';
@@ -51,9 +53,19 @@ const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
 
     let viewer;
     try {
-      const baseLayer = new ImageryLayer(new OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/',
-      }));
+      let baseProvider;
+      try {
+        baseProvider = new UrlTemplateImageryProvider({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+          credit: new Credit('Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, METI, NASA, EPA, USDA'),
+        });
+      } catch (providerError) {
+        console.warn('Using OpenStreetMap imagery fallback:', providerError);
+        baseProvider = new OpenStreetMapImageryProvider({
+          url: 'https://tile.openstreetmap.org/',
+        });
+      }
+      const baseLayer = new ImageryLayer(baseProvider);
 
       viewer = new Viewer(containerRef.current, {
         animation: false,

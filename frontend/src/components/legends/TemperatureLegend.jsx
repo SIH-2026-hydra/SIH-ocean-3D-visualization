@@ -1,7 +1,11 @@
 import { formatTemperature, getTemperatureScaleStops } from '../../utils/temperatureColorScale';
+import { getSalinityScaleStops } from '../../utils/salinityColorScale';
 
-export default function TemperatureLegend({ min, max, selectedDepth, timestamp, provenance, unit = '°C' }) {
-  const stops = getTemperatureScaleStops();
+export default function TemperatureLegend({ min, max, selectedDepth, timestamp, provenance, parameter = 'temperature', unit = '°C' }) {
+  const isSalinity = parameter === 'salinity';
+  const isCurrent = parameter === 'current';
+  const stops = isSalinity ? getSalinityScaleStops() : getTemperatureScaleStops();
+  const title = isCurrent ? 'Current' : isSalinity ? 'Salinity' : 'Temperature';
 
   const legendStyle = {
     position: 'absolute',
@@ -27,19 +31,23 @@ export default function TemperatureLegend({ min, max, selectedDepth, timestamp, 
   return (
     <div className="glass-panel" style={legendStyle} aria-live="polite">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#d8eff9' }}>Temperature</span>
+        <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#d8eff9' }}>{title}</span>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#7fe1ff' }}>{unit}</span>
       </div>
 
-      <div style={gradientStyle} aria-hidden="true">
-        {stops.map((stop) => (
-          <span key={stop.stop} style={{ display: 'block', height: '100%', background: stop.color }} />
-        ))}
-      </div>
+      {isCurrent ? (
+        <div style={{ color: '#a9eaf2', fontSize: '11px', lineHeight: 1.4 }}>Arrows show direction · length shows speed</div>
+      ) : (
+        <div style={gradientStyle} aria-hidden="true">
+          {stops.map((stop) => (
+            <span key={stop.stop} style={{ display: 'block', height: '100%', background: stop.color }} />
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: '#edfaff', letterSpacing: '0.04em' }}>
-        <span>{formatTemperature(min)}</span>
-        <span>{formatTemperature(max)}</span>
+        <span>{isCurrent ? 'Speed' : formatTemperature(min)}</span>
+        <span>{isCurrent ? `${formatTemperature(max)} m/s` : formatTemperature(max)}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px', paddingTop: '2px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(194,219,230,.82)' }}>

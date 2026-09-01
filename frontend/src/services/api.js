@@ -9,8 +9,8 @@ function buildQueryString(params) {
   return entries.length ? `?${entries.join('&')}` : '';
 }
 
-async function requestJson(url) {
-  const response = await fetch(url);
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, options);
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -30,6 +30,7 @@ export async function getOceanData({
   minLon,
   maxLon,
   source,
+  signal,
 } = {}) {
   const query = buildQueryString({
     parameter,
@@ -42,7 +43,7 @@ export async function getOceanData({
     source,
   });
 
-  return requestJson(`${API_BASE_URL}/ocean${query}`);
+  return requestJson(`${API_BASE_URL}/ocean${query}`, { signal });
 }
 
 export async function getOceanPoint({
@@ -50,6 +51,7 @@ export async function getOceanPoint({
   lon,
   depth,
   time,
+  signal,
 } = {}) {
   const query = buildQueryString({
     lat,
@@ -58,7 +60,7 @@ export async function getOceanPoint({
     time,
   });
 
-  return requestJson(`${API_BASE_URL}/ocean/point${query}`);
+  return requestJson(`${API_BASE_URL}/ocean/point${query}`, { signal });
 }
 
 export async function getOceanMetadata() {

@@ -10,6 +10,7 @@ import {
 
 export default function SelectedLocationMarker({ viewer, location, active }) {
   const dataSourceRef = useRef(null);
+  const entityRef = useRef(null);
 
   const position = useMemo(() => {
     if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) return null;
@@ -25,7 +26,7 @@ export default function SelectedLocationMarker({ viewer, location, active }) {
     }
 
     const entity = new Entity({
-      position,
+      position: null,
       point: {
         pixelSize: 10,
         color: Color.fromCssColorString('#6cecff'),
@@ -57,18 +58,30 @@ export default function SelectedLocationMarker({ viewer, location, active }) {
     });
 
     dataSourceRef.current.entities.add(entity);
+    entityRef.current = entity;
 
     return () => {
       if (dataSourceRef.current) {
         dataSourceRef.current.entities.remove(entity);
       }
+      if (entityRef.current === entity) entityRef.current = null;
     };
-  }, [active, position, viewer]);
+  }, [active, viewer]);
+
+  useEffect(() => {
+    if (!entityRef.current || !position || !viewer || viewer.isDestroyed()) return undefined;
+
+    entityRef.current.position = position;
+    viewer.scene.requestRender();
+    return undefined;
+  }, [position, viewer]);
 
   useEffect(() => {
     return () => {
       if (dataSourceRef.current && !dataSourceRef.current.isDestroyed()) {
         viewer?.dataSources?.remove(dataSourceRef.current, true);
+        dataSourceRef.current = null;
+        entityRef.current = null;
       }
     };
   }, [viewer]);

@@ -1,0 +1,72 @@
+.depth-control {
+  position: absolute;
+  left: 24px;
+  bottom: 62px;
+  z-index: 15;
+  width: min(330px, calc(100vw - 48px));
+  padding: 12px 14px 11px;
+  border-radius: 14px;
+}
+
+.depth-control__header,
+.depth-control__ticks {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.depth-control__header {
+  align-items: center;
+  color: #a9d6e2;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.depth-control__header strong {
+  color: #effcff;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: none;
+}
+
+.depth-control__slider {
+  display: block;
+  width: 100%;
+  margin: 12px 0 7px;
+  accent-color: #6cecff;
+  cursor: pointer;
+}
+
+.depth-control__slider:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.depth-control__ticks {
+  color: rgba(200, 226, 234, .72);
+  font-size: 9px;
+}
+
+.depth-control__ticks span {
+  white-space: nowrap;
+}
+
+.depth-control__status {
+  display: block;
+  margin-top: 8px;
+  color: #8fe5f5;
+  font-size: 10px;
+}
+
+@media (max-width: 640px) {
+  .depth-control {
+    left: 16px;
+    bottom: 54px;
+    width: min(330px, calc(100vw - 32px));
+  }
+
+  .depth-control__ticks {
+    font-size: 8px;
+  }
+}

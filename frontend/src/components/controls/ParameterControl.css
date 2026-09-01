@@ -1,0 +1,52 @@
+.parameter-control {
+  position: absolute;
+  top: 182px;
+  right: 24px;
+  z-index: 13;
+  width: 156px;
+  padding: 11px;
+  border-radius: 14px;
+}
+
+.parameter-control__label {
+  display: block;
+  margin-bottom: 7px;
+  color: #9fcbd8;
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.parameter-control__options {
+  display: grid;
+  gap: 4px;
+}
+
+.parameter-control__options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 7px;
+  color: rgba(218, 241, 247, .75);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.parameter-control__options label.is-selected {
+  background: rgba(108, 236, 255, .1);
+  color: #effcff;
+}
+
+.parameter-control__options input {
+  margin: 0;
+  accent-color: #6cecff;
+}
+
+@media (max-width: 760px) {
+  .parameter-control {
+    top: 270px;
+    right: 12px;
+    width: 146px;
+  }
+}

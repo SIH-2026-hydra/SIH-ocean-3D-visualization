@@ -1,0 +1,171 @@
+.time-control {
+  position: absolute;
+  left: 50%;
+  bottom: 54px;
+  z-index: 13;
+  width: min(520px, calc(100vw - 48px));
+  padding: 11px 14px 10px;
+  border-radius: 14px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.time-control__topline,
+.time-control__actions,
+.time-control__ticks {
+  display: flex;
+  align-items: center;
+}
+
+.time-control__topline {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.time-control__eyebrow {
+  color: #9fcbd8;
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.time-control__topline strong {
+  color: #effcff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-align: right;
+}
+
+.time-control__date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.time-control__date-row label {
+  color: rgba(200, 226, 234, .7);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.time-control__date-row select {
+  min-width: 132px;
+  padding: 5px 8px;
+  border: 1px solid rgba(127, 212, 236, .2);
+  border-radius: 7px;
+  background: rgba(12, 31, 39, .86);
+  color: #effcff;
+  font: inherit;
+  font-size: 11px;
+}
+
+.time-control__date-row select:focus-visible,
+.time-control__actions button:focus-visible,
+.time-control__slider:focus-visible {
+  outline: 2px solid rgba(108, 236, 255, .8);
+  outline-offset: 2px;
+}
+
+.time-control__selected-time {
+  margin-left: auto;
+  color: #9fe5f3;
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+
+.time-control__actions {
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.time-control__actions button {
+  width: 26px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid rgba(127, 212, 236, .2);
+  border-radius: 8px;
+  background: rgba(12, 31, 39, .8);
+  color: #dffcff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.time-control__actions button:hover:not(:disabled) {
+  border-color: rgba(127, 212, 236, .48);
+}
+
+.time-control__actions button:disabled {
+  cursor: default;
+  opacity: .35;
+}
+
+.time-control__actions .time-control__play {
+  color: #6cecff;
+}
+
+.time-control__count {
+  margin-left: auto;
+  color: rgba(200, 226, 234, .72);
+  font-size: 10px;
+}
+
+.time-control__slider {
+  display: block;
+  width: 100%;
+  margin: 8px 0 3px;
+  accent-color: #6cecff;
+  cursor: pointer;
+}
+
+.time-control__slider:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.time-control__ticks {
+  justify-content: space-between;
+  height: 5px;
+  padding: 0 5px;
+}
+
+.time-control__ticks span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(159, 220, 235, .72);
+}
+
+.time-control__status {
+  display: block;
+  margin-top: 6px;
+  color: #8fe5f5;
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .time-control {
+    bottom: 50px;
+    width: min(520px, calc(100vw - 32px));
+  }
+
+  .time-control__topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .time-control__topline strong {
+    text-align: left;
+  }
+
+  .time-control__date-row {
+    flex-wrap: wrap;
+  }
+
+  .time-control__selected-time {
+    margin-left: 0;
+  }
+}

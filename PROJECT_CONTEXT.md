@@ -99,5 +99,16 @@ Ocean Data Engine is in place with global-capable normalized fields for temperat
 ## Phase 4 milestone
 Point inspection is added for user-driven click queries against the existing /api/v1/ocean/point endpoint. The selection flow uses the current time/depth state, resolves clicked globe coordinates with Cesium, updates a single selected-location marker, and renders a glass inspector panel without changing the underlying backend contract or the existing viewer architecture.
 
+## Phase 5 milestone
+Depth exploration uses one shared selectedDepth state, initialized to Surface / 0 m and sourced from metadata when available. The depth control refreshes the temperature field and selected point with the shared timestamp, while aborting stale requests and preserving the selected marker location.
+
+## Phase 6 milestone
+Time exploration uses one shared selectedTime ISO timestamp, initialized from the earliest metadata timestep. A discrete UTC timeline controls temperature data and the selected point together, with previous/next navigation, stopped-at-end playback, and abortable requests for rapid changes.
+
+## Phase 7 milestone
+Parameter exploration uses one shared selectedParameter state for temperature, salinity, and current while preserving selectedDepth, selectedTime, selectedLocation, and camera state. Temperature and salinity use the reusable scalar field renderer; current uses a capped static vector layer with speed-derived arrow length and no animation.
+
+Phase 6 temporal navigation now separates metadata-derived UTC date selection from selected-date time-of-day selection while retaining selectedTime as the only canonical value. Date navigation remains compact for future multi-year metadata, and scientific field requests stay lazy for the selected depth/time only.
+
 ## Next milestone
-Phase 5 will be reserved for the next extension after the point inspector and its verification are complete.
+Phase 7 will be reserved for the next extension after time exploration and its verification are complete.
