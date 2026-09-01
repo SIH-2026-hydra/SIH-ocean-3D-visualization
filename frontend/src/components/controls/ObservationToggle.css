@@ -1,0 +1,4 @@
+.observation-toggle { position:absolute; top:300px; right:24px; z-index:13; display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:12px; color:#dffcff; font-size:10px; letter-spacing:.12em; }
+.observation-toggle input { margin:0; accent-color:#8fe0ff; }
+.observation-toggle b { font-size:10px; letter-spacing:0; }
+@media (max-width:760px) { .observation-toggle { top:365px; right:12px; } }

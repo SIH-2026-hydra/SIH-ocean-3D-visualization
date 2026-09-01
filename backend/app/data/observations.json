@@ -1,50 +1,8 @@
 [
-  {
-    "id": "obs-001",
-    "station_id": "station-a1",
-    "dataset_id": "demo-arabian-sea-observations",
-    "timestamp": "2026-08-24T02:00:00Z",
-    "latitude": 12.8,
-    "longitude": 60.4,
-    "depth": 0.0,
-    "temperature": 28.9,
-    "salinity": 35.2,
-    "current_u": 0.31,
-    "current_v": -0.11,
-    "source_type": "buoy",
-    "source_name": "demo-buoy-a1",
-    "quality_flag": "demo"
-  },
-  {
-    "id": "obs-002",
-    "station_id": "station-a2",
-    "dataset_id": "demo-arabian-sea-observations",
-    "timestamp": "2026-08-24T05:00:00Z",
-    "latitude": 14.7,
-    "longitude": 62.9,
-    "depth": 100.0,
-    "temperature": 23.0,
-    "salinity": 35.5,
-    "current_u": 0.23,
-    "current_v": 0.04,
-    "source_type": "argo",
-    "source_name": "demo-argo-a2",
-    "quality_flag": "demo"
-  },
-  {
-    "id": "obs-003",
-    "station_id": "station-a3",
-    "dataset_id": "demo-arabian-sea-observations",
-    "timestamp": "2026-08-24T06:00:00Z",
-    "latitude": 17.2,
-    "longitude": 67.1,
-    "depth": 500.0,
-    "temperature": 18.4,
-    "salinity": 35.7,
-    "current_u": 0.09,
-    "current_v": 0.01,
-    "source_type": "mooring",
-    "source_name": "demo-mooring-a3",
-    "quality_flag": "demo"
-  }
+  {"observation_id":"obs-001","platform_id":"argo-io-01","platform_type":"argo","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T00:00:00Z","latitude":12.8,"longitude":60.4,"depth":0.0,"temperature":28.7,"salinity":35.1,"current_u":null,"current_v":null,"quality":"good","source":"demo-synthetic-observations","is_synthetic":true},
+  {"observation_id":"obs-002","platform_id":"argo-io-01","platform_type":"argo","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T04:00:00Z","latitude":12.8,"longitude":60.4,"depth":100.0,"temperature":22.8,"salinity":35.6,"current_u":null,"current_v":null,"quality":"good","source":"demo-synthetic-observations","is_synthetic":true},
+  {"observation_id":"obs-003","platform_id":"buoy-io-02","platform_type":"buoy","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T08:00:00Z","latitude":18.5,"longitude":70.5,"depth":0.0,"temperature":28.2,"salinity":35.0,"current_u":0.27,"current_v":-0.08,"quality":"good","source":"demo-synthetic-observations","is_synthetic":true},
+  {"observation_id":"obs-004","platform_id":"mooring-io-03","platform_type":"mooring","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T12:00:00Z","latitude":23.0,"longitude":80.0,"depth":200.0,"temperature":19.6,"salinity":35.8,"current_u":0.11,"current_v":0.03,"quality":"good","source":"demo-synthetic-observations","is_synthetic":true},
+  {"observation_id":"obs-005","platform_id":"mooring-io-03","platform_type":"mooring","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T16:00:00Z","latitude":23.0,"longitude":80.0,"depth":500.0,"temperature":15.9,"salinity":35.9,"current_u":null,"current_v":null,"quality":"reviewed","source":"demo-synthetic-observations","is_synthetic":true},
+  {"observation_id":"obs-006","platform_id":"buoy-io-04","platform_type":"buoy","dataset_id":"demo-indian-ocean-observations","timestamp":"2026-08-24T20:00:00Z","latitude":8.0,"longitude":88.0,"depth":0.0,"temperature":29.1,"salinity":null,"current_u":0.19,"current_v":0.12,"quality":"good","source":"demo-synthetic-observations","is_synthetic":true}
 ]

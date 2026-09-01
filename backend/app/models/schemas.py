@@ -37,8 +37,9 @@ class ObservationRecord(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    id: str | None = None
-    station_id: str | None = None
+    observation_id: str
+    platform_id: str
+    platform_type: str
     dataset_id: str
     timestamp: datetime
     latitude: float = Field(ge=-90.0, le=90.0)
@@ -48,9 +49,9 @@ class ObservationRecord(BaseModel):
     salinity: float | None = None
     current_u: float | None = None
     current_v: float | None = None
-    source_type: str
-    source_name: str
-    quality_flag: str = 'demo'
+    quality: str = 'demo'
+    source: str = 'demo-synthetic-observations'
+    is_synthetic: bool = True
 
     @field_validator('timestamp')
     @classmethod

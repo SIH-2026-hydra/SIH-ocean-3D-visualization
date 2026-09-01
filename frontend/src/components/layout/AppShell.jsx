@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Math as CesiumMath,
   ScreenSpaceEventHandler,
@@ -7,6 +7,7 @@ import {
 import TemperatureLayer from '../layers/TemperatureLayer';
 import ScalarFieldLayer from '../layers/ScalarFieldLayer';
 import CurrentVectorLayer from '../layers/CurrentVectorLayer';
+import ObservationLayer from '../layers/ObservationLayer';
 import TemperatureLegend from '../legends/TemperatureLegend';
 import GlobeControls from '../globe/GlobeControls';
 import OceanGlobe from '../globe/OceanGlobe';
@@ -15,8 +16,10 @@ import OceanInspector from '../inspector/OceanInspector';
 import DepthControl from '../controls/DepthControl';
 import TimeControl from '../controls/TimeControl';
 import ParameterControl from '../controls/ParameterControl';
+import ObservationToggle from '../controls/ObservationToggle';
 import { getOceanData, getOceanMetadata, getOceanPoint } from '../../services/api';
 import { getBathymetryPoint } from '../../services/bathymetryApi';
+import { getNearestObservation, getObservations } from '../../services/observationsApi';
 import { getTemperatureRange } from '../../utils/temperatureColorScale';
 import { getSalinityColor } from '../../utils/salinityColorScale';
 const DEFAULT_TEMPERATURE_TIME = '2026-08-24T00:00:00Z';
@@ -54,11 +57,16 @@ export default function AppShell() {
   const [pointError, setPointError] = useState('');
   const [bathymetry, setBathymetry] = useState(null);
   const [bathymetryUnavailable, setBathymetryUnavailable] = useState(false);
+  const [showObservations, setShowObservations] = useState(true);
+  const [observationMarkers, setObservationMarkers] = useState([]);
+  const [selectedObservation, setSelectedObservation] = useState(null);
   const [selectedDepth, setSelectedDepth] = useState(0);
   const [selectedParameter, setSelectedParameter] = useState('temperature');
   const temperatureRequestRef = useRef(null);
   const pointRequestRef = useRef(null);
   const bathymetryRequestRef = useRef(null);
+  const observationRequestRef = useRef(null);
+  const observationSelectionRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,16 +178,21 @@ export default function AppShell() {
     const longitude = CesiumMath.toDegrees(cartographic.longitude);
 
     const nextLocation = { latitude, longitude };
+    observationSelectionRef.current = null;
+    setSelectedObservation(null);
     setSelectedLocation(nextLocation);
   };
 
   const loadPoint = async (location) => {
+    const clickedObservation = observationSelectionRef.current;
+    observationSelectionRef.current = null;
     pointRequestRef.current?.abort();
     const controller = new AbortController();
     pointRequestRef.current = controller;
     setPointError('');
     setPointLoading(true);
     setPointData(null);
+    setSelectedObservation(clickedObservation || null);
 
     try {
       const result = await getOceanPoint({
@@ -190,6 +203,8 @@ export default function AppShell() {
         signal: controller.signal,
       });
       if (!controller.signal.aborted) setPointData(result);
+      const nearest = await getNearestObservation({ lat: location.latitude, lon: location.longitude, depth: selectedDepth, time: selectedTime, signal: controller.signal });
+      if (!controller.signal.aborted && !clickedObservation) setSelectedObservation(nearest.observation);
     } catch (fetchError) {
       if (fetchError.name !== 'AbortError' && !controller.signal.aborted) {
         setPointError(fetchError.message || 'Ocean data unavailable for this location');
@@ -228,6 +243,26 @@ export default function AppShell() {
 
     return () => controller.abort();
   }, [selectedLocation]);
+
+  useEffect(() => {
+    if (!showObservations) {
+      setObservationMarkers([]);
+      return undefined;
+    }
+    observationRequestRef.current?.abort();
+    const controller = new AbortController();
+    observationRequestRef.current = controller;
+    getObservations({ time: selectedTime, min_lat: DEMO_BOUNDS.minLat, max_lat: DEMO_BOUNDS.maxLat, min_lon: DEMO_BOUNDS.minLon, max_lon: DEMO_BOUNDS.maxLon, signal: controller.signal })
+      .then((result) => { if (!controller.signal.aborted) setObservationMarkers(result.data || []); })
+      .catch((fetchError) => { if (fetchError.name !== 'AbortError') console.warn('Observations unavailable:', fetchError); });
+    return () => controller.abort();
+  }, [selectedTime, showObservations]);
+
+  const handleObservationSelect = useCallback((observation) => {
+    observationSelectionRef.current = observation;
+    setSelectedLocation({ latitude: observation.latitude, longitude: observation.longitude });
+    setSelectedObservation(observation);
+  }, []);
 
   useEffect(() => {
     const currentViewer = viewer || globeRef.current?.getViewer?.();
@@ -280,6 +315,7 @@ export default function AppShell() {
       {viewer && selectedParameter === 'current' && (
         <CurrentVectorLayer viewer={viewer} data={temperatureData} selectedTimestamp={selectedTime} selectedDepth={selectedDepth} />
       )}
+      {viewer && <ObservationLayer viewer={viewer} observations={observationMarkers} visible={showObservations} onSelect={handleObservationSelect} />}
       {viewer && (
         <SelectedLocationMarker
           viewer={viewer}
@@ -318,6 +354,7 @@ export default function AppShell() {
       />
 
       <ParameterControl selectedParameter={selectedParameter} onChange={setSelectedParameter} />
+      <ObservationToggle checked={showObservations} onChange={setShowObservations} />
 
       <TimeControl
         timestamps={availableTimestamps}
@@ -350,6 +387,7 @@ export default function AppShell() {
           pointData={pointData}
           bathymetry={bathymetry}
           bathymetryUnavailable={bathymetryUnavailable}
+          observation={selectedObservation}
           loading={pointLoading}
           error={pointError}
           onClose={() => {
