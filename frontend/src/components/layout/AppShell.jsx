@@ -23,6 +23,7 @@ import { getNearestObservation, getObservations } from '../../services/observati
 import { getPointPrediction } from '../../services/predictionsApi';
 import { getTemperatureRange } from '../../utils/temperatureColorScale';
 import { getSalinityColor } from '../../utils/salinityColorScale';
+import { createPointQuery, normalizeLocation } from '../../utils/location';
 const DEFAULT_TEMPERATURE_TIME = '2026-08-24T00:00:00Z';
 const DEMO_BOUNDS = {
   minLat: 5,
@@ -70,7 +71,6 @@ export default function AppShell() {
   const bathymetryRequestRef = useRef(null);
   const observationRequestRef = useRef(null);
   const predictionRequestRef = useRef(null);
-  const observationSelectionRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,34 +181,34 @@ export default function AppShell() {
     const latitude = CesiumMath.toDegrees(cartographic.latitude);
     const longitude = CesiumMath.toDegrees(cartographic.longitude);
 
-    const nextLocation = { latitude, longitude };
-    observationSelectionRef.current = null;
+    const nextLocation = normalizeLocation({ latitude, longitude });
+    if (!nextLocation) return;
     setSelectedObservation(null);
     setSelectedLocation(nextLocation);
   };
 
   const loadPoint = async (location) => {
-    const clickedObservation = observationSelectionRef.current;
-    observationSelectionRef.current = null;
+    const query = createPointQuery(location, selectedDepth, selectedTime);
+    if (!query) return;
     pointRequestRef.current?.abort();
     const controller = new AbortController();
     pointRequestRef.current = controller;
     setPointError('');
     setPointLoading(true);
     setPointData(null);
-    setSelectedObservation(clickedObservation || null);
+    setSelectedObservation(null);
 
     try {
       const result = await getOceanPoint({
-        lat: location.latitude,
-        lon: location.longitude,
-        depth: selectedDepth,
-        time: selectedTime,
+        lat: query.latitude,
+        lon: query.longitude,
+        depth: query.depth,
+        time: query.time,
         signal: controller.signal,
       });
       if (!controller.signal.aborted) setPointData(result);
-      const nearest = await getNearestObservation({ lat: location.latitude, lon: location.longitude, depth: selectedDepth, time: selectedTime, signal: controller.signal });
-      if (!controller.signal.aborted && !clickedObservation) setSelectedObservation(nearest.observation);
+      const nearest = await getNearestObservation({ lat: query.latitude, lon: query.longitude, depth: query.depth, time: query.time, signal: controller.signal });
+      if (!controller.signal.aborted) setSelectedObservation(nearest.observation);
     } catch (fetchError) {
       if (fetchError.name !== 'AbortError' && !controller.signal.aborted) {
         setPointError(fetchError.message || 'Ocean data unavailable for this location');
@@ -219,11 +219,22 @@ export default function AppShell() {
   };
 
   useEffect(() => {
-    if (selectedLocation) loadPoint(selectedLocation);
+    const query = createPointQuery(selectedLocation, selectedDepth, selectedTime);
+    if (!query) {
+      pointRequestRef.current?.abort();
+      setPointData(null);
+      setSelectedObservation(null);
+      setPointLoading(false);
+      return undefined;
+    }
+    loadPoint(query);
+    return undefined;
   }, [selectedDepth, selectedLocation, selectedTime]);
 
   useEffect(() => {
-    if (!selectedLocation) {
+    const query = createPointQuery(selectedLocation, selectedDepth, selectedTime);
+    if (!query) {
+      predictionRequestRef.current?.abort();
       setPrediction(null);
       setPredictionUnavailableReason(null);
       return undefined;
@@ -236,10 +247,10 @@ export default function AppShell() {
     setPredictionUnavailableReason(null);
 
     getPointPrediction({
-      lat: selectedLocation.latitude,
-      lon: selectedLocation.longitude,
-      depth: selectedDepth,
-      time: selectedTime,
+      lat: query.latitude,
+      lon: query.longitude,
+      depth: query.depth,
+      time: query.time,
       signal: controller.signal,
     })
       .then((result) => {
@@ -256,7 +267,13 @@ export default function AppShell() {
   }, [selectedDepth, selectedLocation, selectedTime]);
 
   useEffect(() => {
-    if (!selectedLocation) return undefined;
+    const location = normalizeLocation(selectedLocation);
+    if (!location) {
+      bathymetryRequestRef.current?.abort();
+      setBathymetry(null);
+      setBathymetryUnavailable(false);
+      return undefined;
+    }
 
     bathymetryRequestRef.current?.abort();
     const controller = new AbortController();
@@ -264,7 +281,7 @@ export default function AppShell() {
     setBathymetry(null);
     setBathymetryUnavailable(false);
 
-    getBathymetryPoint(selectedLocation.latitude, selectedLocation.longitude, controller.signal)
+    getBathymetryPoint(location.latitude, location.longitude, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) {
           setBathymetry(result);
@@ -296,9 +313,10 @@ export default function AppShell() {
   }, [selectedTime, showObservations]);
 
   const handleObservationSelect = useCallback((observation) => {
-    observationSelectionRef.current = observation;
-    setSelectedLocation({ latitude: observation.latitude, longitude: observation.longitude });
-    setSelectedObservation(observation);
+    const location = normalizeLocation(observation);
+    if (!location) return;
+    setSelectedObservation(null);
+    setSelectedLocation(location);
   }, []);
 
   useEffect(() => {
@@ -427,6 +445,8 @@ export default function AppShell() {
           observation={selectedObservation}
           prediction={prediction}
           predictionUnavailableReason={predictionUnavailableReason}
+          selectedDepth={selectedDepth}
+          selectedTime={selectedTime}
           loading={pointLoading}
           error={pointError}
           onClose={() => {

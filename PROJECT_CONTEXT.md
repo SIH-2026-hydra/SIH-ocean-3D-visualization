@@ -7,7 +7,7 @@ SIH26067 - Web-Based Interactive 3D Visualization of Numerical Ocean Models and 
 Prototype 1 with backend foundation and frontend infrastructure.
 
 ## Current phase
-Backend Phase 2 (Ocean Data Engine Complete) + Frontend Infrastructure Phase 1 (Complete)
+Prototype 1 Phase 9B complete: point-wise Model / Observation / ML comparison.
 
 ## Architecture
 - Frontend: React 18 + Vite 5 + CesiumJS 1.120 (global 3D Earth visualization)
@@ -45,12 +45,13 @@ Phase 2 adds a generic ocean-state data layer that treats ocean state as f(latit
 - /api/v1/metadata
 - /api/v1/ocean
 - /api/v1/ocean/point
+- /api/v1/predictions/point
 
 ## Current data source
 Deterministic synthetic JSON data stored under backend/app/data/ for a lightweight but visualization-ready Indian Ocean demo grid. Data remains globally capable and is deliberately labelled as synthetic.
 
 ## Synthetic-data status
-All demo records are clearly marked as synthetic and intended for validation only. No observation or ML prediction values are fabricated for this phase.
+All demo records are clearly marked as synthetic and intended for validation only. ML point predictions are deterministic experimental prototype output, not operational forecasts.
 
 ## Completed work
 
@@ -112,3 +113,8 @@ Phase 6 temporal navigation now separates metadata-derived UTC date selection fr
 
 ## Next milestone
 Phase 7 will be reserved for the next extension after time exploration and its verification are complete.
+
+## Phase 9A / 9B milestone
+- A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
+- The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.
+- Signed differences and absolute errors are point-wise diagnostics, not aggregate accuracy metrics; no MAE/RMSE or superiority claim is made.

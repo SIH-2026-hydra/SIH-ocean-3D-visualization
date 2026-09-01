@@ -90,7 +90,10 @@ export default function ObservationLayer({ viewer, observations = [], visible, o
 
     handler.setInputAction((movement) => {
       const picked = scene.pick(movement.position);
-      const observation = picked?.id?.properties?.observation;
+      const observationProperty = picked?.id?.properties?.observation;
+      const observation = typeof observationProperty?.getValue === 'function'
+        ? observationProperty.getValue()
+        : observationProperty;
       if (observation) {
         onSelectRef.current?.(observation);
       }

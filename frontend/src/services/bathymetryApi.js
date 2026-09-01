@@ -6,7 +6,7 @@
 import { API_BASE_URL } from './api';
 
 export async function getBathymetryPoint(latitude, longitude, signal) {
-  if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     throw new Error('Latitude and longitude must be numbers');
   }
 

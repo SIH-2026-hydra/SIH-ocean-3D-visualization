@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { buildPointComparison } from '../../services/comparisonService';
+import { isCurrentPointContext } from '../../utils/location';
 import './OceanInspector.css';
 
 const formatCoordinate = (value) => {
@@ -17,7 +19,12 @@ const formatDepth = (value) => {
   return numericDepth === 0 ? 'Surface · 0 m' : `${numericDepth.toFixed(0)} m`;
 };
 
-export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, prediction, predictionUnavailableReason, loading, error, onClose }) {
+const formatDifference = (value, digits = 2) => {
+  if (!Number.isFinite(Number(value))) return 'Unavailable';
+  return `${Number(value) >= 0 ? '+' : ''}${Number(value).toFixed(digits)}`;
+};
+
+export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, prediction, predictionUnavailableReason, selectedDepth, selectedTime, loading, error, onClose }) {
   const requested = selectedLocation || pointData?.requestedLocation || {};
   const matched = pointData?.matchedLocation || {};
   const source = pointData?.source || {};
@@ -48,6 +55,7 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
     return [
       { label: 'Platform', value: platformType },
       { label: 'Platform ID', value: observation.platform_id || 'Unavailable' },
+      { label: 'Lat / Lon', value: `${formatCoordinate(observation.latitude)} / ${formatCoordinate(observation.longitude)}` },
       { label: 'Depth', value: formatDepth(observation.depth) },
       { label: 'Timestamp', value: observation.timestamp || 'Unavailable' },
       { label: 'Temperature', value: observation.temperature != null ? `${formatMetric(observation.temperature, 2)} °C` : 'Unavailable' },
@@ -84,6 +92,22 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
       { label: 'Model', value: `${prediction.model_id} v${prediction.model_version}` },
     ];
   }, [prediction]);
+
+  const comparison = useMemo(() => {
+    const modelMatchesSelection = pointData && isCurrentPointContext({
+      ...pointData.requestedLocation,
+      depth: pointData.depth,
+      time: pointData.timestamp,
+    }, selectedLocation, selectedDepth, selectedTime);
+    const predictionMatchesSelection = !prediction || isCurrentPointContext({
+      latitude: prediction.latitude,
+      longitude: prediction.longitude,
+      depth: prediction.depth,
+      time: prediction.timestamp,
+    }, selectedLocation, selectedDepth, selectedTime);
+    if (!modelMatchesSelection || !predictionMatchesSelection) return null;
+    return buildPointComparison({ model: pointData.model, observation, prediction });
+  }, [observation, pointData, prediction, selectedDepth, selectedLocation, selectedTime]);
 
   if (!selectedLocation && !pointData && !loading && !error) {
     return null;
@@ -202,6 +226,18 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
                 <strong>{metric.value}</strong>
               </div>
             )) : <div className="ocean-inspector__empty">{predictionUnavailableReason === 'below_seafloor' ? 'Unavailable below the local seafloor' : predictionUnavailableReason === 'outside_coverage' ? 'Unavailable outside prototype coverage' : 'Prediction unavailable'}</div>}
+          </div>
+          <div className="ocean-inspector__section">
+            <div className="ocean-inspector__section-head">COMPARISON · REFERENCE: OBSERVATION</div>
+            {comparison?.available ? comparison.metrics.map((metric) => (
+              <div key={metric.parameter} className="ocean-inspector__comparison">
+                <div className="ocean-inspector__comparison-title">{metric.parameter}</div>
+                <div className="ocean-inspector__row"><span>Observed</span><strong>{formatMetric(metric.observationValue, metric.parameter === 'Current Speed' ? 3 : 2)} {metric.unit}</strong></div>
+                <div className="ocean-inspector__row"><span>Model</span><strong>{metric.modelValue == null ? 'Unavailable' : `${formatMetric(metric.modelValue, metric.parameter === 'Current Speed' ? 3 : 2)} ${metric.unit} · Δ ${formatDifference(metric.modelDifference, metric.parameter === 'Current Speed' ? 3 : 2)}`}</strong></div>
+                <div className="ocean-inspector__row"><span>ML Prediction</span><strong>{metric.predictionValue == null ? 'Unavailable' : `${formatMetric(metric.predictionValue, metric.parameter === 'Current Speed' ? 3 : 2)} ${metric.unit} · Δ ${formatDifference(metric.predictionDifference, metric.parameter === 'Current Speed' ? 3 : 2)}`}</strong></div>
+                {metric.closerEstimate && <div className="ocean-inspector__comparison-result">Closer to observation: {metric.closerEstimate === 'prediction' ? 'ML Prediction' : metric.closerEstimate === 'model' ? 'Model State' : 'Tie'}</div>}
+              </div>
+            )) : <div className="ocean-inspector__empty">{comparison?.reason === 'no_shared_measurements' ? 'No shared measured variables available for comparison' : 'No suitable observation available for comparison'}</div>}
           </div>
         </>
       )}

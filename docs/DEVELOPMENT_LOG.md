@@ -120,3 +120,13 @@ Completed:
 Verification:
 - Editor diagnostics pass for Phase 7 frontend files
 - npm lint/build and runtime verification require a working Node/npm shell
+
+## Phase 9A / 9B (ML Point Prediction + Comparison)
+
+Completed:
+- Experimental deterministic ML point prediction is shown independently of model and observation state.
+- A reusable frontend comparison service calculates point-wise signed differences and absolute errors only when a valid nearby observation exists.
+- Temperature, salinity, and current-speed comparisons preserve missing values and explicitly report unavailable comparison states.
+
+Limitations:
+- This synthetic single-point diagnostic does not establish overall model or ML accuracy; aggregate MAE/RMSE, forecasting, and real-data integration remain out of scope.

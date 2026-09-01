@@ -1,5 +1,7 @@
+import { createPointQuery } from '../utils/location.js';
+
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1';
+  import.meta.env?.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1';
 
 function buildQueryString(params) {
   const entries = Object.entries(params)
@@ -46,21 +48,22 @@ export async function getOceanData({
   return requestJson(`${API_BASE_URL}/ocean${query}`, { signal });
 }
 
-export async function getOceanPoint({
+export function buildOceanPointUrl({
   lat,
   lon,
   depth,
   time,
-  signal,
 } = {}) {
-  const query = buildQueryString({
-    lat,
-    lon,
-    depth,
-    time,
-  });
+  const point = createPointQuery({ lat, lon }, depth, time);
+  if (!point) return null;
+  const query = buildQueryString({ lat: point.latitude, lon: point.longitude, depth: point.depth, time: point.time });
+  return `${API_BASE_URL}/ocean/point${query}`;
+}
 
-  return requestJson(`${API_BASE_URL}/ocean/point${query}`, { signal });
+export async function getOceanPoint(params = {}) {
+  const url = buildOceanPointUrl(params);
+  if (!url) throw new TypeError('A valid latitude, longitude, depth, and time are required for an ocean point request.');
+  return requestJson(url, { signal: params.signal });
 }
 
 export async function getOceanMetadata() {

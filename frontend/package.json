@@ -13,6 +13,7 @@
     "dev": "npm run cesium:assets && vite",
     "build": "npm run cesium:assets && vite build",
     "lint": "eslint .",
+    "test": "node --test src/services/*.test.js src/utils/*.test.js",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "preview": "vite preview"
   },
