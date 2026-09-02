@@ -26,11 +26,13 @@ class NetCDFDatasetRegistry:
         self.data_dir = Path(data_dir)
         self.pattern = pattern
         self.datasets: list[DatasetBundle] = []
+        self.ready = False
 
     def discover(self) -> list[DatasetBundle]:
         self.datasets = []
         if not self.data_dir.exists():
             logger.warning('NetCDF data directory does not exist: %s', self.data_dir)
+            self.ready = True
             return []
         for path in sorted(self.data_dir.glob(self.pattern)):
             try:
@@ -41,6 +43,7 @@ class NetCDFDatasetRegistry:
             self.datasets.extend(descriptors)
             for descriptor in descriptors:
                 logger.info('Discovered NetCDF dataset %s (%s)', path.name, descriptor.variable)
+        self.ready = True
         return list(self.datasets)
 
     def by_variable(self, variable: str) -> list[DatasetBundle]:

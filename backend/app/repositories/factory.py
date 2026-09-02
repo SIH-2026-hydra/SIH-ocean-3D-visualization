@@ -27,7 +27,9 @@ def create_repository(config: Settings = settings) -> BaseOceanRepository:
             bundles = discovered
             if not bundles:
                 raise ValueError('Copernicus data directory contains no valid supported datasets.')
-            return CopernicusNetCDFRepository(bundles)
+            repository = CopernicusNetCDFRepository(bundles)
+            repository.registry = registry
+            return repository
         paths = {
             field: path
             for field, path in {
