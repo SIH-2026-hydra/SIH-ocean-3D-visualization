@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.models.schemas import BathymetryRecord, DatasetMetadata, ModelRecord, ObservationRecord
+from app.models.dataset_bundle import DatasetBundle
 from app.repositories.base import BaseOceanRepository
 from app.repositories.exceptions import DatasetUnavailableError, InvalidProviderQueryError
 
@@ -16,6 +17,39 @@ class JsonOceanRepository(BaseOceanRepository):
     def __init__(self, base_dir: Path | None = None) -> None:
         self.base_dir = (base_dir or Path(__file__).resolve().parent.parent).resolve()
         self.data_dir = self.base_dir / 'data'
+        self.dataset_bundles = (
+            DatasetBundle(
+                dataset_id='demo-indian-ocean-model',
+                provider='JSON',
+                product='OCEANX DEMO JSON MODEL',
+                model='Deterministic Synthetic Ocean Model',
+                forecast_cycle='2026-08-24T00:00:00Z',
+                variables=('temperature', 'salinity', 'current_u', 'current_v'),
+                coordinate_signature=(
+                    ('time', 'timestamp'),
+                    ('depth', 'depth'),
+                    ('latitude', 'latitude'),
+                    ('longitude', 'longitude'),
+                ),
+                spatial_coverage={
+                    'min_latitude': 5.0,
+                    'max_latitude': 30.0,
+                    'min_longitude': 45.0,
+                    'max_longitude': 95.0,
+                },
+                temporal_coverage={
+                    'start': '2026-08-24T00:00:00Z',
+                    'end': '2026-08-24T20:00:00Z',
+                },
+                depth_levels=(0.0, 50.0, 100.0, 200.0, 500.0),
+                source_files={'model': (self.data_dir / 'model_data.json',)},
+                metadata={
+                    'source_type': 'model',
+                    'is_synthetic': True,
+                    'dataset_name': 'Indian Ocean Demo Model',
+                },
+            ),
+        )
 
     def _load_json(self, filename: str) -> list[dict[str, Any]]:
         file_path = self.data_dir / filename

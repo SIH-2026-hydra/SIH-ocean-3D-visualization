@@ -14,6 +14,7 @@ from .exceptions import (
 from .factory import create_repository
 from .json_repository import JsonOceanRepository
 from .netcdf_registry import DatasetDescriptor, NetCDFDatasetRegistry
+from .noaa_repository import NOAAOceanRepository
 from app.models.dataset_bundle import DatasetBundle
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
 	'InvalidProviderQueryError',
 	'JsonOceanRepository',
 	'NetCDFDatasetRegistry',
+	'NOAAOceanRepository',
 	'ProviderError',
 	'ProviderUnavailableError',
 	'UnsupportedProviderOperationError',

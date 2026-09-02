@@ -122,6 +122,12 @@ Discovery endpoints are backed by the `DatasetBundle` objects retained by the re
 
 The discovery APIs form the canonical metadata source for clients and future providers. Existing model, ocean, observation, metadata, and prediction endpoints remain unchanged.
 
+### Multi-provider integration
+
+The configured `OCEAN_PROVIDER` selects the active repository. Supported local providers are `json`, `copernicus`, and `noaa`. Each provider implements the same `BaseOceanRepository` contract and retains canonical `DatasetBundle` metadata. The service and discovery layers consume those provider-neutral bundles without provider-specific branching.
+
+Providers are initialized and closed by the FastAPI lifespan. Discovery endpoints therefore work from the active provider's bundle catalog while existing query, derived-product, and response contracts remain unchanged.
+
 ## Normalized data architecture
 
 The backend keeps a consistent scientific contract across raw data sources:

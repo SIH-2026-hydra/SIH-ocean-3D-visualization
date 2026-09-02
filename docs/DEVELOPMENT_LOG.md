@@ -178,6 +178,20 @@ Discovery flow:
 Test status:
 - Full backend suite: **110 passed**
 
+## Prototype 2.2 Phase 5 (Multi-provider integration)
+
+Completed:
+- Added `NOAAOceanRepository` as a local second scientific provider implementing the existing `BaseOceanRepository` contract.
+- Registered NOAA through the existing `OCEAN_PROVIDER` configuration selection.
+- Added canonical DatasetBundle metadata to both JSON and NOAA providers for provider-neutral discovery.
+- Verified lifecycle, discovery, advanced queries, sampling, and derived products across provider implementations.
+
+Provider flow:
+`OCEAN_PROVIDER -> repository factory -> provider -> DatasetBundle -> service -> discovery/API`
+
+Test status:
+- Full backend suite: **113 passed**
+
 ## Prototype 2.1 Phase 3 (Local dataset pipeline)
 
 Completed:

@@ -9,6 +9,7 @@ from app.repositories.base import BaseOceanRepository
 from app.repositories.copernicus_netcdf_repository import CopernicusNetCDFRepository
 from app.repositories.json_repository import JsonOceanRepository
 from app.repositories.netcdf_registry import NetCDFDatasetRegistry
+from app.repositories.noaa_repository import NOAAOceanRepository
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ def create_repository(config: Settings = settings) -> BaseOceanRepository:
     logger.info('Selecting ocean provider: %s', provider)
     if provider == 'json':
         return JsonOceanRepository()
+    if provider == 'noaa':
+        return NOAAOceanRepository()
     if provider == 'copernicus':
         if config.copernicus_data_dir:
             registry = NetCDFDatasetRegistry(config.copernicus_data_dir, pattern=config.copernicus_file_pattern)

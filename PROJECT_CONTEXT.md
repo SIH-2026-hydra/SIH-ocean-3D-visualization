@@ -119,6 +119,11 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - DiscoveryService translates the repository's retained DatasetBundle objects into public catalog, variable, coverage, and capability responses without inspecting files or exposing paths.
 - Derived products are included in variable and capability discovery with their source variables and units; existing data APIs remain unchanged.
 
+## Prototype 2.2 Phase 5 milestone
+- Added a local NOAA-compatible repository implementing the existing provider contract without interface changes.
+- JSON and NOAA providers both retain canonical DatasetBundle metadata, so catalog, variables, coverage, and capabilities are provider-agnostic.
+- Provider selection remains configuration-driven through `OCEAN_PROVIDER`; provider lifecycle remains owned by application lifespan.
+
 ## Phase 9A / 9B milestone
 - A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
 - The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.
