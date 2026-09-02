@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -119,3 +119,81 @@ class PredictionRecord(BaseModel):
         if value.tzinfo is None:
             value = value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)
+
+
+class ApiRecord(BaseModel):
+    """Flexible API record preserving provider-specific response fields."""
+
+    model_config = ConfigDict(extra='allow')
+
+
+class ApiError(BaseModel):
+    code: str
+    message: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApiErrorResponse(BaseModel):
+    detail: str
+    error: ApiError
+
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    version: str
+    provider_ready: bool
+    registry_ready: bool
+
+
+RecordType = TypeVar('RecordType')
+
+
+class DataResponse(BaseModel, Generic[RecordType]):
+    data: list[RecordType]
+
+
+class CountedDataResponse(DataResponse[ApiRecord]):
+    count: int
+    total: int | None = None
+
+
+class ModelResponse(DataResponse[ApiRecord]):
+    metadata: dict[str, Any]
+
+
+class OceanResponse(BaseModel):
+    query: dict[str, Any]
+    metadata: dict[str, Any]
+    data: list[ApiRecord]
+
+
+class OceanPointResponse(ApiRecord):
+    """Point response preserving the established camelCase payload."""
+
+
+class ObservationResponse(DataResponse[ApiRecord]):
+    metadata: dict[str, Any]
+
+
+class PointObservationResponse(BaseModel):
+    available: bool
+    requested_location: dict[str, float]
+    requested_depth: float
+    requested_time: str
+    observation: ApiRecord | None
+
+
+class PredictionResponse(BaseModel):
+    requested_location: dict[str, float]
+    requested_depth: float
+    requested_time: str
+    available: bool
+    unavailable_reason: str | None
+    prediction: ApiRecord | None
+
+
+class MetadataResponse(BaseModel):
+    metadata: dict[str, Any]
+    discovery: dict[str, Any]
+    data: list[ApiRecord]

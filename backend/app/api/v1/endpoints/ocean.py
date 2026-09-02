@@ -6,6 +6,9 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
+from app.models.schemas import OceanResponse
+from app.models.schemas import OceanPointResponse
+from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 repository = get_repository()
@@ -50,7 +53,7 @@ def _validate_lat_lon_bounds(
         raise HTTPException(status_code=400, detail='min_lon cannot be greater than max_lon.')
 
 
-@router.get('/ocean')
+@router.get('/ocean', response_model=OceanResponse)
 def get_ocean(
     parameter: str = Query(default='temperature', description='Ocean variable to return: temperature, salinity, current'),
     depth: str | None = Query(default=None, description='Optional depth in meters'),
@@ -62,7 +65,7 @@ def get_ocean(
     lat: str | None = Query(default=None, description='Optional latitude validation alias'),
     lon: str | None = Query(default=None, description='Optional longitude validation alias'),
     source: str | None = Query(default=None, description='Optional source filter'),
-) -> dict[str, object]:
+) -> OceanResponse:
     if parameter not in service.VALID_PARAMETERS:
         raise HTTPException(status_code=400, detail=f'Unsupported parameter: {parameter}. Valid options: {sorted(service.VALID_PARAMETERS)}')
 
@@ -116,7 +119,7 @@ def get_ocean(
 
     dataset_metadata = service.get_dataset_metadata()
     dataset = dataset_metadata[0] if dataset_metadata else {}
-    return {
+    payload = {
         'query': {
             'parameter': parameter,
             'depth': parsed_depth,
@@ -135,9 +138,11 @@ def get_ocean(
         },
         'data': records,
     }
+    enforce_response_limits(payload)
+    return OceanResponse.model_validate(payload)
 
 
-@router.get('/ocean/point')
+@router.get('/ocean/point', response_model=OceanPointResponse)
 def get_ocean_point(
     lat: float = Query(..., ge=-90.0, le=90.0, description='Latitude in decimal degrees'),
     lon: float = Query(..., ge=-180.0, le=180.0, description='Longitude in decimal degrees'),
@@ -158,4 +163,5 @@ def get_ocean_point(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return point
+    enforce_response_limits(point)
+    return OceanPointResponse.model_validate(point)

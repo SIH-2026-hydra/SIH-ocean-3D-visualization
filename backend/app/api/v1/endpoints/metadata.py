@@ -2,14 +2,16 @@ from fastapi import APIRouter, HTTPException
 
 from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
+from app.models.schemas import MetadataResponse
+from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 repository = get_repository()
 service = OceanDataService(repository)
 
 
-@router.get('/metadata')
-def get_metadata() -> dict[str, object]:
+@router.get('/metadata', response_model=MetadataResponse)
+def get_metadata() -> MetadataResponse:
     try:
         records = service.get_dataset_metadata()
         discovery = service.get_ocean_discovery()
@@ -21,7 +23,7 @@ def get_metadata() -> dict[str, object]:
     if not records:
         raise HTTPException(status_code=404, detail='No dataset metadata available.')
 
-    return {
+    payload = {
         'metadata': {
             'count': len(records),
             'sourceType': 'dataset',
@@ -30,3 +32,5 @@ def get_metadata() -> dict[str, object]:
         'discovery': discovery,
         'data': records,
     }
+    enforce_response_limits(payload)
+    return MetadataResponse.model_validate(payload)

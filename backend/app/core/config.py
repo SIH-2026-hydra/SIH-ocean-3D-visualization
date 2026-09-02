@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     copernicus_file_pattern: str = '*.nc'
     copernicus_validate_on_startup: bool = True
     copernicus_log_level: str = 'INFO'
+    max_response_cells: int = 100_000
+    max_grid_dimension: int = 1_000
+    max_response_size_bytes: int = 10_000_000
 
     model_config = SettingsConfigDict(
         env_file='.env',

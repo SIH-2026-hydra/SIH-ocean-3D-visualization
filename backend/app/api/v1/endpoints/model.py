@@ -2,16 +2,18 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
+from app.models.schemas import ModelResponse
+from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 repository = get_repository()
 service = OceanDataService(repository)
 
 
-@router.get('/model')
+@router.get('/model', response_model=ModelResponse)
 def get_model_records(
     depth: str | None = Query(default=None, description='Optional depth filter in meters'),
-) -> dict[str, object]:
+) -> ModelResponse:
     parsed_depth: float | None = None
     if depth is not None:
         try:
@@ -32,10 +34,9 @@ def get_model_records(
 
     if not records:
         raise HTTPException(status_code=404, detail='No model records found for the requested depth.')
-
     dataset_metadata = service.get_dataset_metadata()
     dataset = dataset_metadata[0] if dataset_metadata else {}
-    return {
+    payload = {
         'metadata': {
             'count': len(records),
             'sourceType': dataset.get('source_type', 'model'),
@@ -43,3 +44,5 @@ def get_model_records(
         },
         'data': records,
     }
+    enforce_response_limits(payload)
+    return ModelResponse.model_validate(payload)

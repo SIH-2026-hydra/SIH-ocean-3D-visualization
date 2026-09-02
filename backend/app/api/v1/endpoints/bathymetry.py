@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import get_repository
 from app.services.bathymetry_service import BathymetryService
+from app.models.schemas import ApiRecord, CountedDataResponse
+from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 repository = get_repository()
@@ -48,13 +50,13 @@ def _validate_lat_lon_bounds(
         raise HTTPException(status_code=400, detail='min_lon cannot be greater than max_lon.')
 
 
-@router.get('/bathymetry')
+@router.get('/bathymetry', response_model=CountedDataResponse)
 def get_bathymetry(
     min_lat: str | None = Query(default=None, description='Minimum latitude'),
     max_lat: str | None = Query(default=None, description='Maximum latitude'),
     min_lon: str | None = Query(default=None, description='Minimum longitude'),
     max_lon: str | None = Query(default=None, description='Maximum longitude'),
-) -> dict[str, object]:
+) -> CountedDataResponse:
     """
     Query bathymetry data within geographic bounds.
     
@@ -81,14 +83,16 @@ def get_bathymetry(
         max_lon=parsed_max_lon,
     )
 
-    return {
+    payload = {
         'data': filtered,
         'count': len(filtered),
         'total': len(records),
     }
+    enforce_response_limits(payload)
+    return CountedDataResponse.model_validate(payload)
 
 
-@router.get('/bathymetry/point')
+@router.get('/bathymetry/point', response_model=ApiRecord)
 def get_bathymetry_point(
     lat: str = Query(..., description='Latitude'),
     lon: str = Query(..., description='Longitude'),
@@ -114,4 +118,5 @@ def get_bathymetry_point(
     if result is None:
         raise HTTPException(status_code=404, detail='No bathymetry data available at this location.')
 
-    return result
+    enforce_response_limits(result)
+    return ApiRecord.model_validate(result)

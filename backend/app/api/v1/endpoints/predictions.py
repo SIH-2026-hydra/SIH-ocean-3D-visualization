@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import get_repository
 from app.services.prediction_service import PredictionService
+from app.models.schemas import PredictionResponse
+from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 service = PredictionService(get_repository())
@@ -34,13 +36,13 @@ def parse_timestamp(value: str | None) -> datetime | None:
         ) from exc
 
 
-@router.get('/predictions/point')
+@router.get('/predictions/point', response_model=PredictionResponse)
 def get_point_prediction(
     lat: float = Query(..., ge=-90.0, le=90.0, description='Latitude in decimal degrees'),
     lon: float = Query(..., ge=-180.0, le=180.0, description='Longitude in decimal degrees'),
     depth: str = Query(..., description='Depth in meters'),
     time: str = Query(..., description='UTC timestamp (ISO-8601)'),
-) -> dict[str, object]:
+) -> PredictionResponse:
     """Get ML point prediction for ocean state at specified location.
     
     Parameters:
@@ -68,7 +70,7 @@ def get_point_prediction(
         timestamp=parsed_time,
     )
 
-    return {
+    payload = {
         'requested_location': {'latitude': lat, 'longitude': lon},
         'requested_depth': parsed_depth,
         'requested_time': time,
@@ -76,3 +78,5 @@ def get_point_prediction(
         'unavailable_reason': unavailable_reason,
         'prediction': prediction,
     }
+    enforce_response_limits(payload)
+    return PredictionResponse.model_validate(payload)
