@@ -43,6 +43,32 @@ def test_ocean_current_query_returns_vector_and_speed():
     assert all(item['speed'] >= 0 for item in payload['data'])
 
 
+def test_ocean_current_speed_derived_product():
+    response = client.get('/api/v1/ocean?parameter=current_speed&depth=0')
+    assert response.status_code == 200
+    payload = response.json()
+    assert all(item['value'] >= 0 for item in payload['data'])
+    assert payload['metadata']['derivedProduct'] == 'Current speed'
+    assert payload['metadata']['units'] == 'm/s'
+    assert payload['metadata']['sourceVariables'] == ['current_u', 'current_v']
+
+
+def test_ocean_current_direction_derived_product():
+    response = client.get('/api/v1/ocean?parameter=current_direction&depth=0')
+    assert response.status_code == 200
+    payload = response.json()
+    assert all(0 <= item['value'] < 360 for item in payload['data'])
+    assert payload['metadata']['derivedProduct'] == 'Current direction'
+    assert payload['metadata']['units'] == 'degrees'
+
+
+def test_raw_current_response_remains_vector_compatible():
+    payload = client.get('/api/v1/ocean?parameter=current&depth=0').json()
+    assert 'current_u' in payload['data'][0]
+    assert 'current_v' in payload['data'][0]
+    assert 'speed' in payload['data'][0]
+
+
 def test_ocean_depth_filter():
     response = client.get('/api/v1/ocean?parameter=temperature&depth=200')
     assert response.status_code == 200

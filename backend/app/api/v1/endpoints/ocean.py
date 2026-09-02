@@ -135,6 +135,8 @@ def get_ocean(
         'temperature': '°C',
         'salinity': 'PSU',
         'current': 'm/s',
+        'current_speed': 'm/s',
+        'current_direction': 'degrees',
     }
 
     dataset_metadata = service.get_dataset_metadata()

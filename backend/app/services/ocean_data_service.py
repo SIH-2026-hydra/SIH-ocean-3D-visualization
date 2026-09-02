@@ -5,12 +5,13 @@ from datetime import datetime, timezone
 
 from app.repositories.base import BaseOceanRepository
 from app.services.bathymetry_service import BathymetryService
+from app.services.derived_products import DERIVED_PRODUCTS, calculate_derived_product
 
 
 class OceanDataService:
     """Service layer for normalized ocean model queries and future-ready discovery metadata."""
 
-    VALID_PARAMETERS = {'temperature', 'salinity', 'current'}
+    VALID_PARAMETERS = {'temperature', 'salinity', 'current', *DERIVED_PRODUCTS}
     PARAMETER_TO_FIELD = {
         'temperature': 'temperature',
         'salinity': 'salinity',
@@ -36,13 +37,15 @@ class OceanDataService:
         metadata = self.get_dataset_metadata()
         dataset = metadata[0] if metadata else {}
         return {
-            'parameters': ['temperature', 'salinity', 'current'],
+            'parameters': ['temperature', 'salinity', 'current', *DERIVED_PRODUCTS],
             'units': {
                 'temperature': '°C',
                 'salinity': 'PSU',
                 'depth': 'm',
                 'current_u': 'm/s',
                 'current_v': 'm/s',
+                'current_speed': 'm/s',
+                'current_direction': 'degrees',
                 'latitude': 'decimal degrees',
                 'longitude': 'decimal degrees',
                 'time': 'UTC',
@@ -136,7 +139,7 @@ class OceanDataService:
             raise ValueError(f'Unsupported parameter: {parameter}')
 
         records = self.repository.query_ocean_records(
-            parameter=parameter,
+            parameter='current' if parameter in DERIVED_PRODUCTS else parameter,
             depth=depth,
             timestamp=timestamp,
             min_lat=min_lat,
@@ -146,6 +149,8 @@ class OceanDataService:
             source=source,
         )
 
+        if parameter in DERIVED_PRODUCTS:
+            return [self._serialize_derived_record(record, parameter) for record in records]
         if parameter == 'current':
             return [self._serialize_current_record(record) for record in records]
         return [self._serialize_scalar_record(record, parameter) for record in records]
@@ -197,14 +202,20 @@ class OceanDataService:
         if sampling_factor > 1:
             records = self._sample_spatial_grid(records, sampling_factor)
 
+        product = DERIVED_PRODUCTS.get(parameter)
         units = {'temperature': '°C', 'salinity': 'PSU', 'current': 'm/s'}
         metadata = {
             'variable': parameter,
-            'units': units[parameter],
+            'units': product['units'] if product else units[parameter],
             'gridResolution': self._grid_resolution(records),
             'returnedCellCount': len(records),
             'samplingFactor': sampling_factor,
         }
+        if product:
+            metadata.update({
+                'derivedProduct': product['name'],
+                'sourceVariables': list(product['source_variables']),
+            })
         return records, metadata
 
     @staticmethod
@@ -315,6 +326,15 @@ class OceanDataService:
             'current_u': current_u,
             'current_v': current_v,
             'speed': self._current_speed(current_u, current_v),
+        }
+
+    def _serialize_derived_record(self, record: dict, product: str) -> dict:
+        return {
+            'latitude': float(record['latitude']),
+            'longitude': float(record['longitude']),
+            'depth': float(record['depth']),
+            'timestamp': self._serialize_timestamp(record['timestamp']),
+            'value': calculate_derived_product(product, record),
         }
 
     @staticmethod
