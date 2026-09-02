@@ -65,6 +65,11 @@ def get_ocean(
     lat: str | None = Query(default=None, description='Optional latitude validation alias'),
     lon: str | None = Query(default=None, description='Optional longitude validation alias'),
     source: str | None = Query(default=None, description='Optional source filter'),
+    min_depth: str | None = Query(default=None, description='Optional minimum depth in meters'),
+    max_depth: str | None = Query(default=None, description='Optional maximum depth in meters'),
+    start_time: str | None = Query(default=None, description='Optional start timestamp (ISO-8601)'),
+    end_time: str | None = Query(default=None, description='Optional end timestamp (ISO-8601)'),
+    sampling_factor: int = Query(default=1, ge=1, description='Return every Nth spatial grid point'),
 ) -> OceanResponse:
     if parameter not in service.VALID_PARAMETERS:
         raise HTTPException(status_code=400, detail=f'Unsupported parameter: {parameter}. Valid options: {sorted(service.VALID_PARAMETERS)}')
@@ -78,6 +83,10 @@ def get_ocean(
 
     parsed_depth = _parse_optional_float(depth, name='depth')
     if parsed_depth is not None and parsed_depth < 0:
+        raise HTTPException(status_code=400, detail='Depth must be greater than or equal to 0.')
+    parsed_min_depth = _parse_optional_float(min_depth, name='min_depth')
+    parsed_max_depth = _parse_optional_float(max_depth, name='max_depth')
+    if parsed_min_depth is not None and parsed_min_depth < 0 or parsed_max_depth is not None and parsed_max_depth < 0:
         raise HTTPException(status_code=400, detail='Depth must be greater than or equal to 0.')
 
     parsed_min_lat = _parse_optional_float(min_lat, name='min_lat')
@@ -96,17 +105,28 @@ def get_ocean(
             service._normalize_timestamp(time)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail='time must be a valid ISO-8601 UTC timestamp.') from exc
+    for name, value in (('start_time', start_time), ('end_time', end_time)):
+        if value is not None:
+            try:
+                service._normalize_timestamp(value)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=f'{name} must be a valid ISO-8601 UTC timestamp.') from exc
 
     try:
-        records = service.get_ocean_records(
+        records, query_metadata = service.query_ocean_data(
             parameter=parameter,
             depth=parsed_depth,
+            min_depth=parsed_min_depth,
+            max_depth=parsed_max_depth,
             timestamp=time,
+            start_time=start_time,
+            end_time=end_time,
             min_lat=parsed_min_lat,
             max_lat=parsed_max_lat,
             min_lon=parsed_min_lon,
             max_lon=parsed_max_lon,
             source=source,
+            sampling_factor=sampling_factor,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -135,6 +155,7 @@ def get_ocean(
             'sourceType': dataset.get('source_type', 'model'),
             'isSynthetic': bool(dataset.get('is_synthetic', True)),
             'count': len(records),
+            **query_metadata,
         },
         'data': records,
     }

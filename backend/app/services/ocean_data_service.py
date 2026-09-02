@@ -150,6 +150,84 @@ class OceanDataService:
             return [self._serialize_current_record(record) for record in records]
         return [self._serialize_scalar_record(record, parameter) for record in records]
 
+    def query_ocean_data(
+        self,
+        *,
+        parameter: str = 'temperature',
+        depth: float | None = None,
+        min_depth: float | None = None,
+        max_depth: float | None = None,
+        timestamp: str | None = None,
+        start_time: str | datetime | None = None,
+        end_time: str | datetime | None = None,
+        min_lat: float | None = None,
+        max_lat: float | None = None,
+        min_lon: float | None = None,
+        max_lon: float | None = None,
+        sampling_factor: int = 1,
+        source: str | None = None,
+    ) -> tuple[list[dict], dict[str, object]]:
+        if min_depth is not None and max_depth is not None and min_depth > max_depth:
+            raise ValueError('min_depth cannot be greater than max_depth.')
+        if start_time is not None and end_time is not None and self._normalize_timestamp(start_time) > self._normalize_timestamp(end_time):
+            raise ValueError('start_time cannot be later than end_time.')
+        if sampling_factor < 1:
+            raise ValueError('sampling_factor must be greater than or equal to 1.')
+
+        records = self.get_ocean_records(
+            parameter=parameter,
+            depth=depth,
+            timestamp=timestamp,
+            min_lat=min_lat,
+            max_lat=max_lat,
+            min_lon=min_lon,
+            max_lon=max_lon,
+            source=source,
+        )
+        if min_depth is not None:
+            records = [record for record in records if float(record['depth']) >= min_depth]
+        if max_depth is not None:
+            records = [record for record in records if float(record['depth']) <= max_depth]
+        if start_time is not None:
+            start = self._normalize_timestamp(start_time)
+            records = [record for record in records if self._normalize_timestamp(record['timestamp']) >= start]
+        if end_time is not None:
+            end = self._normalize_timestamp(end_time)
+            records = [record for record in records if self._normalize_timestamp(record['timestamp']) <= end]
+        if sampling_factor > 1:
+            records = self._sample_spatial_grid(records, sampling_factor)
+
+        units = {'temperature': '°C', 'salinity': 'PSU', 'current': 'm/s'}
+        metadata = {
+            'variable': parameter,
+            'units': units[parameter],
+            'gridResolution': self._grid_resolution(records),
+            'returnedCellCount': len(records),
+            'samplingFactor': sampling_factor,
+        }
+        return records, metadata
+
+    @staticmethod
+    def _sample_spatial_grid(records: list[dict], factor: int) -> list[dict]:
+        spatial_points: dict[tuple[float, float], int] = {}
+        sampled: list[dict] = []
+        for record in records:
+            point = (float(record['latitude']), float(record['longitude']))
+            point_index = spatial_points.setdefault(point, len(spatial_points))
+            if point_index % factor == 0:
+                sampled.append(record)
+        return sampled
+
+    @staticmethod
+    def _grid_resolution(records: list[dict]) -> str:
+        dimensions = {
+            'latitude': len({record['latitude'] for record in records}),
+            'longitude': len({record['longitude'] for record in records}),
+            'depth': len({record['depth'] for record in records}),
+            'time': len({record['timestamp'] for record in records}),
+        }
+        return ' x '.join(f'{name}={count}' for name, count in dimensions.items())
+
     def get_ocean_point(
         self,
         *,

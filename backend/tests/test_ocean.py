@@ -67,6 +67,55 @@ def test_ocean_geographic_bounds_filter():
         assert 55 <= item['longitude'] <= 70
 
 
+def test_ocean_viewport_query_returns_only_requested_cells():
+    response = client.get('/api/v1/ocean?min_lat=10&max_lat=15&min_lon=55&max_lon=65')
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['metadata']['returnedCellCount'] == len(payload['data'])
+    assert all(10 <= item['latitude'] <= 15 and 55 <= item['longitude'] <= 65 for item in payload['data'])
+
+
+def test_ocean_depth_interval_query():
+    response = client.get('/api/v1/ocean?min_depth=50&max_depth=200')
+    assert response.status_code == 200
+    assert all(50 <= item['depth'] <= 200 for item in response.json()['data'])
+
+
+def test_ocean_time_interval_query():
+    response = client.get('/api/v1/ocean?start_time=2026-08-24T06:00:00Z&end_time=2026-08-24T12:00:00Z')
+    assert response.status_code == 200
+    assert {item['timestamp'] for item in response.json()['data']} == {
+        '2026-08-24T08:00:00Z',
+        '2026-08-24T12:00:00Z',
+    }
+
+
+def test_ocean_spatial_sampling_returns_every_nth_grid_point():
+    baseline = client.get('/api/v1/ocean?depth=0').json()
+    sampled_response = client.get('/api/v1/ocean?depth=0&sampling_factor=2')
+    assert sampled_response.status_code == 200
+    sampled = sampled_response.json()
+    assert sampled['metadata']['samplingFactor'] == 2
+    assert len(sampled['data']) < len(baseline['data'])
+    assert {(item['latitude'], item['longitude']) for item in sampled['data']} <= {
+        (item['latitude'], item['longitude']) for item in baseline['data']
+    }
+
+
+def test_ocean_query_metadata_describes_returned_fields():
+    metadata = client.get('/api/v1/ocean?parameter=salinity&depth=100').json()['metadata']
+    assert metadata['variable'] == 'salinity'
+    assert metadata['units'] == 'PSU'
+    assert metadata['gridResolution']
+    assert metadata['returnedCellCount'] > 0
+    assert metadata['samplingFactor'] == 1
+
+
+def test_ocean_rejects_reverse_query_intervals():
+    assert client.get('/api/v1/ocean?min_depth=200&max_depth=50').status_code == 400
+    assert client.get('/api/v1/ocean?start_time=2026-08-24T12:00:00Z&end_time=2026-08-24T06:00:00Z').status_code == 400
+
+
 def test_ocean_combined_filters():
     response = client.get(
         '/api/v1/ocean?parameter=salinity&depth=100&time=2026-08-24T12:00:00Z&min_lat=10&max_lat=20&min_lon=60&max_lon=80'
