@@ -4,6 +4,7 @@ from .base import BaseOceanRepository
 from .copernicus_netcdf_repository import CopernicusNetCDFRepository
 from .exceptions import (
 	DataUnavailableError,
+	IncompatibleDatasetBundleError,
 	DatasetUnavailableError,
 	InvalidProviderQueryError,
 	ProviderError,
@@ -19,6 +20,7 @@ __all__ = [
 	'BaseOceanRepository',
 	'CopernicusNetCDFRepository',
 	'DataUnavailableError',
+	'IncompatibleDatasetBundleError',
 	'DatasetBundle',
 	'DatasetDescriptor',
 	'DatasetUnavailableError',

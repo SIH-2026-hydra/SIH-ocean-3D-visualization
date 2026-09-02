@@ -11,7 +11,7 @@ from app.core.config import Settings
 from app.repositories.factory import create_repository
 from app.repositories.netcdf_registry import NetCDFDatasetRegistry
 from app.repositories.base import BaseOceanRepository
-from app.repositories.exceptions import DataUnavailableError, DatasetUnavailableError, InvalidProviderQueryError, ProviderError
+from app.repositories.exceptions import DataUnavailableError, DatasetUnavailableError, IncompatibleDatasetBundleError, InvalidProviderQueryError, ProviderError
 from app.services.ocean_data_service import OceanDataService
 
 
@@ -62,6 +62,70 @@ def test_normalizes_variables_coordinates_depth_time_and_provenance(local_copern
     assert record['source_type'] == 'model'
     assert record['provider'] == 'Copernicus Marine'
     assert record['is_synthetic'] is False
+
+
+@pytest.mark.parametrize(
+    ('coordinate', 'replacement'),
+    [
+        ('latitude', [10.0, 12.5, 16.0]),
+        ('longitude', [70.0, 72.5, 76.0]),
+        ('depth', [0.494025, 47.374, 99.0]),
+        ('time', np.array(['2026-09-01T00:00:00', '2026-09-01T12:00:00'], dtype='datetime64[ns]')),
+    ],
+)
+def test_rejects_coordinate_value_mismatch(local_copernicus_files, tmp_path, coordinate, replacement):
+    source = xr.open_dataset(local_copernicus_files['salinity'])
+    mismatched = source.assign_coords({coordinate: replacement})
+    path = tmp_path / 'salinity_mismatched.nc'
+    mismatched.to_netcdf(path)
+    source.close()
+
+    repository = CopernicusNetCDFRepository({'temperature': local_copernicus_files['temperature'], 'salinity': path})
+    try:
+        with pytest.raises(IncompatibleDatasetBundleError):
+            repository.get_ocean_records(parameter='all')
+    finally:
+        repository.close()
+
+
+def test_rejects_dimension_order_mismatch(local_copernicus_files, tmp_path):
+    source = xr.open_dataset(local_copernicus_files['salinity'])
+    mismatched = source.transpose('depth', 'time', 'latitude', 'longitude')
+    path = tmp_path / 'salinity_mismatched_dimensions.nc'
+    mismatched.to_netcdf(path)
+    source.close()
+
+    repository = CopernicusNetCDFRepository({'temperature': local_copernicus_files['temperature'], 'salinity': path})
+    try:
+        with pytest.raises(IncompatibleDatasetBundleError):
+            repository.get_ocean_records(parameter='all')
+    finally:
+        repository.close()
+
+
+def test_aligns_values_by_coordinate_not_array_index(local_copernicus_files, tmp_path):
+    source = xr.open_dataset(local_copernicus_files['salinity'])
+    reordered = source.isel(latitude=slice(None, None, -1))
+    path = tmp_path / 'salinity_reordered.nc'
+    reordered.to_netcdf(path)
+    source.close()
+
+    repository = CopernicusNetCDFRepository({'temperature': local_copernicus_files['temperature'], 'salinity': path})
+    try:
+        records = repository.get_ocean_records(
+            parameter='all',
+            depth=0.494025,
+            timestamp='2026-09-01T00:00:00Z',
+            min_lat=10,
+            max_lat=10,
+            min_lon=70,
+            max_lon=70,
+        )
+    finally:
+        repository.close()
+
+    assert records[0]['temperature'] == pytest.approx(20.0)
+    assert records[0]['salinity'] == pytest.approx(30.0)
 
 
 def test_maps_currents_derives_speed_and_preserves_missing_as_none(local_copernicus_files):

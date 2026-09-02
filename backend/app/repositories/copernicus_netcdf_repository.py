@@ -10,6 +10,7 @@ from app.repositories.base import BaseOceanRepository
 from app.models.dataset_bundle import DatasetBundle
 from app.repositories.exceptions import (
     DatasetUnavailableError,
+    IncompatibleDatasetBundleError,
     InvalidProviderQueryError,
     ProviderUnavailableError,
 )
@@ -236,13 +237,21 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
             min_lon=min_lon,
             max_lon=max_lon,
         )
+        self._validate_selected_datasets(selected_paths)
         records = []
         for time_index in selections['time']:
             for depth_index in selections['depth']:
                 for latitude_index in selections['latitude']:
                     for longitude_index in selections['longitude']:
                         values = {
-                            field: self._value(self._dataset(field, selected_paths[field]), field, time_index, depth_index, latitude_index, longitude_index)
+                            field: self._value(
+                                self._dataset(field, selected_paths[field]),
+                                field,
+                                selections['time_values'][time_index],
+                                selections['depth_values'][depth_index],
+                                selections['latitude_values'][latitude_index],
+                                selections['longitude_values'][longitude_index],
+                            )
                             for field in fields
                         }
                         record = {
@@ -292,6 +301,37 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         if parameter not in self.VARIABLE_FILES:
             raise InvalidProviderQueryError(f'Unsupported parameter: {parameter}')
         return (parameter,)
+
+    def _validate_selected_datasets(self, selected_paths: dict[str, Path]) -> None:
+        selected = [(field, self._dataset(field, path)) for field, path in selected_paths.items()]
+        if not selected:
+            return
+        reference_field, reference_dataset = selected[0]
+        reference = self._coordinate_definition(reference_dataset)
+        reference_dimensions = tuple(reference_dataset[self.VARIABLE_FILES[reference_field][1]].dims)
+        for field, dataset in selected[1:]:
+            current = self._coordinate_definition(dataset)
+            dimensions = tuple(dataset[self.VARIABLE_FILES[field][1]].dims)
+            if current != reference or dimensions != reference_dimensions:
+                raise IncompatibleDatasetBundleError(
+                    'Selected NetCDF files have incompatible coordinate definitions.'
+                )
+
+    def _coordinate_definition(self, dataset: Any) -> tuple[Any, ...]:
+        definition = []
+        for name in self.COORDINATE_NAMES:
+            coordinate_name = self._coordinate_name(dataset, name)
+            coordinate = dataset[coordinate_name]
+            values = coordinate.values
+            comparable_values = tuple(sorted(self._coordinate_value(value, name) for value in values.flat))
+            definition.append((name, coordinate_name, tuple(coordinate.dims), tuple(coordinate.shape), comparable_values))
+        return tuple(definition)
+
+    @staticmethod
+    def _coordinate_value(value: Any, coordinate: str) -> Any:
+        if coordinate == 'time':
+            return CopernicusNetCDFRepository._normalize_datetime(value)
+        return float(value)
 
     def _validate_query(self, filters: dict[str, Any]) -> None:
         latitude = filters.get('latitude')
@@ -344,18 +384,18 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
             selected[f'{name}_values'] = values
         return selected
 
-    def _value(self, dataset: Any, field: str, time_index: int, depth_index: int, latitude_index: int, longitude_index: int) -> float | None:
+    def _value(self, dataset: Any, field: str, time_value: Any, depth_value: Any, latitude_value: Any, longitude_value: Any) -> float | None:
         data = dataset[self.VARIABLE_FILES[field][1]]
-        indices = {'time': time_index, 'depth': depth_index, 'latitude': latitude_index, 'longitude': longitude_index}
+        values = {'time': time_value, 'depth': depth_value, 'latitude': latitude_value, 'longitude': longitude_value}
         indexers = {
-            self._coordinate_name(dataset, name): index
-            for name, index in indices.items()
+            self._coordinate_name(dataset, name): value
+            for name, value in values.items()
             if self._coordinate_name(dataset, name, required=False) in data.dims
         }
         try:
-            value = data.isel(indexers).item()
+            value = data.sel(indexers).item()
             return float(value) if math.isfinite(float(value)) else None
-        except (TypeError, ValueError):
+        except (KeyError, TypeError, ValueError):
             return None
 
     def _coordinate_name(self, dataset: Any, coordinate: str, *, required: bool = True) -> str | None:

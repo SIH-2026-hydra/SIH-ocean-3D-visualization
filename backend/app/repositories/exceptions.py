@@ -20,3 +20,7 @@ class UnsupportedProviderOperationError(ValueError, ProviderError):
 
 class DataUnavailableError(LookupError, ProviderError):
     """A valid query has no data in the provider coverage or range."""
+
+
+class IncompatibleDatasetBundleError(ValueError, ProviderError):
+    """Files selected for one query do not describe the same dataset."""
