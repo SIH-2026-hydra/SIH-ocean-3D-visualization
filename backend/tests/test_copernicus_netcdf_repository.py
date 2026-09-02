@@ -9,6 +9,8 @@ from app.repositories.copernicus_netcdf_repository import CopernicusNetCDFReposi
 from app.core.config import Settings
 from app.repositories.factory import create_repository
 from app.repositories.netcdf_registry import NetCDFDatasetRegistry
+from app.repositories.base import BaseOceanRepository
+from app.repositories.exceptions import DataUnavailableError, DatasetUnavailableError, InvalidProviderQueryError, ProviderError
 from app.services.ocean_data_service import OceanDataService
 
 
@@ -217,3 +219,29 @@ def test_provider_selects_second_dataset_for_covered_request(tmp_path, local_cop
 
     assert records
     assert min(record['latitude'] for record in records) == 30.0
+
+
+def test_json_and_copernicus_implement_the_same_provider_contract(local_copernicus_files):
+    assert isinstance(create_repository(Settings(ocean_provider='json')), BaseOceanRepository)
+    repository = CopernicusNetCDFRepository(local_copernicus_files)
+    assert isinstance(repository, BaseOceanRepository)
+    assert {'query_ocean_records', 'query_ocean_point', 'get_provider_capabilities', 'health', 'close'} <= set(dir(repository))
+    repository.close()
+
+
+def test_provider_exceptions_share_domain_hierarchy(local_copernicus_files):
+    assert issubclass(DatasetUnavailableError, ProviderError)
+    assert issubclass(DataUnavailableError, ProviderError)
+    assert issubclass(InvalidProviderQueryError, ProviderError)
+
+    repository = CopernicusNetCDFRepository({'temperature': 'missing.nc'})
+    with pytest.raises(DatasetUnavailableError):
+        repository.query_ocean_records(parameter='temperature')
+
+
+def test_ocean_service_has_no_runtime_capability_detection():
+    import inspect
+
+    from app.services import ocean_data_service
+
+    assert 'getattr(' not in inspect.getsource(ocean_data_service.OceanDataService)

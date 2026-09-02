@@ -137,3 +137,8 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - Copernicus repository candidates are selected by variable and requested coverage, with opened datasets reused by path for the application lifetime.
 - Provider selection, discovery, validation, and failures emit concise backend log records.
 - The API and frontend contracts remain unchanged, and explicit Phase 2 file-path configuration remains supported.
+
+## Prototype 2.1.5 Phase 1 milestone
+- Replaced implicit provider capabilities with one explicit `BaseOceanRepository` contract implemented by JSON and Copernicus providers.
+- `OceanDataService` uses only formal provider methods; runtime `getattr()` capability detection was removed.
+- Added shared provider exceptions while preserving compatible API error behavior.

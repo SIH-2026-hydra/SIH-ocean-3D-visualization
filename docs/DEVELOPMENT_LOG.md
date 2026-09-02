@@ -181,6 +181,19 @@ Test status:
 - Phase 3 provider/registry tests: **11 passed**
 - Full backend regression suite: **71 passed**
 
+## Prototype 2.1.5 Phase 1 (Formal provider interface)
+
+Completed:
+- Formalized one `BaseOceanRepository` contract for collection queries, point queries, capabilities, health, and cleanup.
+- Updated JSON and Copernicus providers to explicitly implement the same contract.
+- Removed `getattr()` capability detection from `OceanDataService`.
+- Added shared provider-layer exception types with built-in compatibility for existing API handlers.
+- Added provider compliance, exception hierarchy, and no-dynamic-detection tests.
+
+Test status:
+- Focused contract tests: **14 passed**
+- Full backend suite: pending final run
+
 Remaining before Prototype 2.2:
 - Production-scale data layout and query performance tuning, richer dataset identity/grouping, and operational monitoring.
 - Downloading, scheduled jobs, distributed caching, cloud storage, and frontend real-data visualization remain out of scope.

@@ -7,6 +7,11 @@ from typing import Any, Mapping
 
 from app.models.schemas import DatasetMetadata, ModelRecord
 from app.repositories.base import BaseOceanRepository
+from app.repositories.exceptions import (
+    DatasetUnavailableError,
+    InvalidProviderQueryError,
+    ProviderUnavailableError,
+)
 
 
 class CopernicusNetCDFRepository(BaseOceanRepository):
@@ -56,9 +61,13 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         if cache_key in self._datasets:
             return self._datasets[cache_key]
         if field not in self.dataset_paths:
-            raise ValueError(f'No local NetCDF file configured for {field}.')
+            raise DatasetUnavailableError(f'No local NetCDF file configured for {field}.')
         if not path.exists():
-            raise FileNotFoundError(f'Missing local NetCDF file for {field}: {path}')
+            raise DatasetUnavailableError(f'Missing local NetCDF file for {field}: {path}')
+        try:
+            dataset = self._require_xarray().open_dataset(path)
+        except RuntimeError as exc:
+            raise ProviderUnavailableError(str(exc)) from exc
         dataset = self._require_xarray().open_dataset(path)
         variable_name = self.VARIABLE_FILES[field][1]
         if variable_name not in dataset.data_vars:
@@ -94,6 +103,23 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
 
     def get_observation_records(self) -> list[dict[str, Any]]:
         return []
+
+    def get_provider_capabilities(self) -> dict[str, Any]:
+        metadata = self.get_dataset_metadata()
+        return {
+            'provider': 'Copernicus Marine',
+            'available_parameters': ['temperature', 'salinity', 'current'],
+            'metadata': metadata,
+            'depths': self._get_available_depths(),
+            'timestamps': self._get_available_timestamps(),
+        }
+
+    def health(self) -> dict[str, Any]:
+        try:
+            metadata = self.get_dataset_metadata()
+        except (DatasetUnavailableError, ProviderUnavailableError, ValueError) as exc:
+            return {'available': False, 'provider': 'Copernicus Marine', 'error': str(exc)}
+        return {'available': bool(metadata), 'provider': 'Copernicus Marine'}
 
     def get_bathymetry_records(self) -> list[dict[str, Any]]:
         return []
@@ -131,12 +157,12 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         )
         return [metadata.model_dump(mode='json')]
 
-    def get_available_depths(self) -> list[float]:
+    def _get_available_depths(self) -> list[float]:
         dataset = self._dataset(next(iter(self.dataset_paths)))
         coordinate = self._coordinate_name(dataset, 'depth')
         return [float(value) for value in dataset[coordinate].values]
 
-    def get_available_timestamps(self) -> list[str]:
+    def _get_available_timestamps(self) -> list[str]:
         dataset = self._dataset(next(iter(self.dataset_paths)))
         coordinate = self._coordinate_name(dataset, 'time')
         return [self._serialize_timestamp(value) for value in dataset[coordinate].values]
@@ -151,7 +177,10 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         max_lat: float | None = None,
         min_lon: float | None = None,
         max_lon: float | None = None,
+        source: str | None = None,
     ) -> list[dict[str, Any]]:
+        if source is not None and source.lower() not in {'model', 'copernicus marine'}:
+            raise InvalidProviderQueryError(f'Unsupported source: {source}')
         fields = self._fields_for(parameter)
         selected_paths = {field: self._select_path(field, depth, timestamp, min_lat, max_lat, min_lon, max_lon) for field in fields}
         if any(path is None for path in selected_paths.values()):
@@ -219,7 +248,7 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         if parameter == 'current':
             return ('current_u', 'current_v')
         if parameter not in self.VARIABLE_FILES:
-            raise ValueError(f'Unsupported parameter: {parameter}')
+            raise InvalidProviderQueryError(f'Unsupported parameter: {parameter}')
         return (parameter,)
 
     def _validate_query(self, filters: dict[str, Any]) -> None:

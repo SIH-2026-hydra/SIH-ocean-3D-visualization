@@ -21,13 +21,7 @@ class OceanDataService:
         self.repository = repository
 
     def get_model_records(self, *, depth: float | None = None) -> list[dict]:
-        query = getattr(self.repository, 'query_ocean_records', None)
-        if query is not None:
-            return query(parameter=None, depth=depth)
-        records = self.repository.get_model_records()
-        if depth is not None:
-            records = [record for record in records if record['depth'] == depth]
-        return records
+        return self.repository.query_ocean_records(parameter='all', depth=depth)
 
     def get_observation_records(self, *, depth: float | None = None) -> list[dict]:
         records = self.repository.get_observation_records()
@@ -67,17 +61,18 @@ class OceanDataService:
         }
 
     def get_available_timestamps(self) -> list[str]:
-        provider_timestamps = getattr(self.repository, 'get_available_timestamps', None)
+        capabilities = self.repository.get_provider_capabilities()
+        provider_timestamps = capabilities.get('timestamps')
         if provider_timestamps is not None:
-            return provider_timestamps()
-        records = self.repository.get_model_records()
+            return provider_timestamps
+        records = self.repository.query_ocean_records(parameter='all')
         timestamps = sorted({record['timestamp'] for record in records})
         return [value if isinstance(value, str) else value.replace(microsecond=0).isoformat().replace('+00:00', 'Z') for value in timestamps]
 
     def _get_available_depths(self) -> list[float]:
-        provider_depths = getattr(self.repository, 'get_available_depths', None)
+        provider_depths = self.repository.get_provider_capabilities().get('depths')
         if provider_depths is not None:
-            return provider_depths()
+            return provider_depths
         return [0.0, 50.0, 100.0, 200.0, 500.0]
 
     def filter_records(
@@ -140,29 +135,16 @@ class OceanDataService:
         if parameter not in self.VALID_PARAMETERS:
             raise ValueError(f'Unsupported parameter: {parameter}')
 
-        query = getattr(self.repository, 'query_ocean_records', None)
-        if query is not None:
-            records = query(
-                parameter=parameter,
-                depth=depth,
-                timestamp=timestamp,
-                min_lat=min_lat,
-                max_lat=max_lat,
-                min_lon=min_lon,
-                max_lon=max_lon,
-            )
-        else:
-            records = self.filter_records(
-                self.repository.get_model_records(),
-                parameter=parameter,
-                depth=depth,
-                timestamp=timestamp,
-                min_lat=min_lat,
-                max_lat=max_lat,
-                min_lon=min_lon,
-                max_lon=max_lon,
-                source=source,
-            )
+        records = self.repository.query_ocean_records(
+            parameter=parameter,
+            depth=depth,
+            timestamp=timestamp,
+            min_lat=min_lat,
+            max_lat=max_lat,
+            min_lon=min_lon,
+            max_lon=max_lon,
+            source=source,
+        )
 
         if parameter == 'current':
             return [self._serialize_current_record(record) for record in records]
@@ -203,34 +185,7 @@ class OceanDataService:
                 f"Requested depth is below the local seafloor ({bathymetry['seafloor_depth']:.0f} m)."
             )
 
-        time_value = self._normalize_timestamp(timestamp)
-        provider_point = getattr(self.repository, 'query_ocean_point', None)
-        if provider_point is not None:
-            matched = provider_point(latitude=lat, longitude=lon, depth=float(depth), timestamp=timestamp)
-            return self._build_point_response(lat, lon, matched)
-
-        records = list(self.repository.get_model_records())
-        candidates = [record for record in records if float(record['depth']) == float(depth)]
-        if not candidates:
-            candidates = records
-        candidates = [record for record in candidates if self._normalize_timestamp(record['timestamp']) == time_value]
-        if not candidates:
-            candidates = [record for record in records if float(record['depth']) == float(depth)]
-        if not candidates:
-            candidates = records
-
-        if not candidates:
-            raise LookupError('No ocean model data available for the requested point.')
-
-        matched = min(
-            candidates,
-            key=lambda record: (
-                abs(float(record['latitude']) - lat),
-                abs(float(record['longitude']) - lon),
-                abs(float(record['depth']) - float(depth)),
-            ),
-        )
-
+        matched = self.repository.query_ocean_point(latitude=lat, longitude=lon, depth=float(depth), timestamp=timestamp)
         return self._build_point_response(lat, lon, matched)
 
     def _build_point_response(self, latitude: float, longitude: float, matched: dict) -> dict:

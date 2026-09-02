@@ -1,11 +1,50 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any
 
 
 class BaseOceanRepository(ABC):
-    """Abstract repository contract for ocean datasets."""
+    """Explicit provider contract used by all backend data providers."""
+
+    @abstractmethod
+    def query_ocean_records(
+        self,
+        *,
+        parameter: str = 'temperature',
+        depth: float | None = None,
+        timestamp: str | datetime | None = None,
+        min_lat: float | None = None,
+        max_lat: float | None = None,
+        min_lon: float | None = None,
+        max_lon: float | None = None,
+        source: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return normalized model records for a provider query."""
+
+    @abstractmethod
+    def query_ocean_point(
+        self,
+        *,
+        latitude: float,
+        longitude: float,
+        depth: float,
+        timestamp: str | datetime,
+    ) -> dict[str, Any]:
+        """Return one normalized model record for a point query."""
+
+    @abstractmethod
+    def get_provider_capabilities(self) -> dict[str, Any]:
+        """Return provider capabilities and available model dimensions."""
+
+    @abstractmethod
+    def health(self) -> dict[str, Any]:
+        """Return provider health information without raising on normal status."""
+
+    @abstractmethod
+    def close(self) -> None:
+        """Release provider resources."""
 
     @abstractmethod
     def get_model_records(self) -> list[dict[str, Any]]:

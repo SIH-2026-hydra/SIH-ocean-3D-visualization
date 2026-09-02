@@ -115,6 +115,12 @@ JSON -> Repository -> Service -> FastAPI -> Frontend
 
 This means later phases can replace the demo JSON files with NetCDF, APIs, or databases without forcing major frontend API changes.
 
+### Provider contract
+
+`BaseOceanRepository` is the single provider contract. JSON and Copernicus providers explicitly implement collection queries, point queries, metadata/capabilities, health, observation and bathymetry access, and lifecycle cleanup. `OceanDataService` calls this contract directly and does not inspect provider capabilities dynamically.
+
+Provider failures use the shared hierarchy in `app.repositories.exceptions`: `ProviderError` is the base, with dataset-unavailable, provider-unavailable, invalid-query, unsupported-operation, and data-unavailable variants. These variants retain compatible built-in exception types so existing API error behavior is preserved.
+
 ## Prototype 2.1 offline provider
 
 `CopernicusNetCDFRepository` is an additive repository for locally staged Copernicus NetCDF files. Configure paths by normalized field (`temperature`, `salinity`, `current_u`, `current_v`); it reads `thetao`, `so`, `uo`, and `vo`, preserves missing values as `None`, derives current speed, and reports Copernicus model provenance. It does not download data.
