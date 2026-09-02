@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from app.core.config import Settings, settings
+from app.models.dataset_bundle import DatasetBundle
 from app.repositories.base import BaseOceanRepository
 from app.repositories.copernicus_netcdf_repository import CopernicusNetCDFRepository
 from app.repositories.json_repository import JsonOceanRepository
@@ -22,14 +24,10 @@ def create_repository(config: Settings = settings) -> BaseOceanRepository:
             registry = NetCDFDatasetRegistry(config.copernicus_data_dir, pattern=config.copernicus_file_pattern)
             discovered = registry.discover() if config.copernicus_validate_on_startup else []
             logger.info('NetCDF registry ready: directory=%s datasets=%d', config.copernicus_data_dir, len(discovered))
-            paths = {}
-            for field in {'temperature', 'salinity', 'current_u', 'current_v'}:
-                matches = [item.path for item in discovered if item.variable == field]
-                if matches:
-                    paths[field] = matches
-            if not paths:
+            bundles = discovered
+            if not bundles:
                 raise ValueError('Copernicus data directory contains no valid supported datasets.')
-            return CopernicusNetCDFRepository(paths)
+            return CopernicusNetCDFRepository(bundles)
         paths = {
             field: path
             for field, path in {
@@ -42,5 +40,22 @@ def create_repository(config: Settings = settings) -> BaseOceanRepository:
         }
         if not paths:
             raise ValueError('Copernicus provider requires at least one configured NetCDF path.')
-        return CopernicusNetCDFRepository(paths)
+        return CopernicusNetCDFRepository(_bundle_from_paths(paths))
     raise ValueError(f'Unsupported ocean provider: {config.ocean_provider}')
+
+
+def _bundle_from_paths(paths: dict[str, str]) -> DatasetBundle:
+    return DatasetBundle(
+        dataset_id='copernicus-global-analysisforecast-phy-001-024',
+        provider='Copernicus Marine',
+        product='GLOBAL_ANALYSISFORECAST_PHY_001_024',
+        model='Mercator Ocean GLO12',
+        forecast_cycle=None,
+        variables=tuple(paths),
+        coordinate_signature=(),
+        spatial_coverage={},
+        temporal_coverage={},
+        depth_levels=(),
+        source_files={field: (Path(value),) for field, value in paths.items()},
+        metadata={},
+    )

@@ -1,30 +1,14 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from app.models.dataset_bundle import DatasetBundle
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class DatasetDescriptor:
-    dataset_id: str
-    path: Path
-    variable: str
-    source_variable: str
-    provider: str
-    spatial_coverage: dict[str, float]
-    timestamps: tuple[str, ...]
-    depths: tuple[float, ...]
-
-    def supports(self, *, timestamp: str | None = None, depth: float | None = None) -> bool:
-        if timestamp is not None and timestamp not in self.timestamps:
-            return False
-        if depth is not None and not self.depths:
-            return False
-        return depth is None or min(self.depths) <= depth <= max(self.depths)
+DatasetDescriptor = DatasetBundle
 
 
 class NetCDFDatasetRegistry:
@@ -41,9 +25,9 @@ class NetCDFDatasetRegistry:
     def __init__(self, data_dir: str | Path, *, pattern: str = '*.nc') -> None:
         self.data_dir = Path(data_dir)
         self.pattern = pattern
-        self.datasets: list[DatasetDescriptor] = []
+        self.datasets: list[DatasetBundle] = []
 
-    def discover(self) -> list[DatasetDescriptor]:
+    def discover(self) -> list[DatasetBundle]:
         self.datasets = []
         if not self.data_dir.exists():
             logger.warning('NetCDF data directory does not exist: %s', self.data_dir)
@@ -59,10 +43,10 @@ class NetCDFDatasetRegistry:
                 logger.info('Discovered NetCDF dataset %s (%s)', path.name, descriptor.variable)
         return list(self.datasets)
 
-    def by_variable(self, variable: str) -> list[DatasetDescriptor]:
-        return [dataset for dataset in self.datasets if dataset.variable == variable]
+    def by_variable(self, variable: str) -> list[DatasetBundle]:
+        return [dataset for dataset in self.datasets if variable in dataset.available_variables]
 
-    def _validate(self, path: Path) -> list[DatasetDescriptor]:
+    def _validate(self, path: Path) -> list[DatasetBundle]:
         if not path.is_file():
             raise ValueError('not a regular file')
         try:
@@ -93,19 +77,27 @@ class NetCDFDatasetRegistry:
             }
             timestamps = tuple(self._serialize_time(value) for value in dataset[coordinate_names['time']].values)
             depths = tuple(float(value) for value in dataset[coordinate_names['depth']].values)
-            return [
-                DatasetDescriptor(
-                    dataset_id=path.stem,
-                    path=path,
-                    variable=self.SUPPORTED_VARIABLES[source_variable],
-                    source_variable=source_variable,
-                    provider='Copernicus Marine',
-                    spatial_coverage=coverage,
-                    timestamps=timestamps,
-                    depths=depths,
-                )
+            temporal_coverage = {'start': timestamps[0], 'end': timestamps[-1]} if timestamps else {}
+            source_files = {
+                self.SUPPORTED_VARIABLES[source_variable]: (path,)
                 for source_variable in source_variables
-            ]
+            }
+            return [
+                DatasetBundle(
+                    dataset_id=path.stem,
+                    provider='Copernicus Marine',
+                    product=str(dataset.attrs.get('product', 'GLOBAL_ANALYSISFORECAST_PHY_001_024')),
+                    model=str(dataset.attrs.get('model', 'Mercator Ocean GLO12')),
+                    forecast_cycle=dataset.attrs.get('forecast_cycle'),
+                    variables=tuple(self.SUPPORTED_VARIABLES[item] for item in source_variables),
+                    coordinate_signature=tuple((key, coordinate_names[key]) for key in self.COORDINATES),
+                    spatial_coverage=coverage,
+                    temporal_coverage=temporal_coverage,
+                    depth_levels=depths,
+                    source_files=source_files,
+                    metadata={'source_variables': {self.SUPPORTED_VARIABLES[item]: item for item in source_variables}, 'timestamps': timestamps},
+                )
+            ][:1]
         finally:
             dataset.close()
 

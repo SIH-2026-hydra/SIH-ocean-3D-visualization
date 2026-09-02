@@ -194,6 +194,20 @@ Test status:
 - Focused contract tests: **14 passed**
 - Full backend suite: pending final run
 
+## Prototype 2.1.5 Phase 2 (DatasetBundle catalog)
+
+Completed:
+- Added `DatasetBundle` as the canonical dataset identity model.
+- Registry discovery stores one bundle per validated file, including all supported variables in that file and their source paths.
+- Factory passes discovered bundles to Copernicus repositories without reducing them to path lists.
+- Repositories retain bundle identity and use bundle metadata for provider dataset metadata.
+- Preserved explicit path compatibility, dataset selection behavior, scientific normalization, and public API schemas.
+- Added bundle construction, registry, factory, repository, and identity-preservation tests.
+
+Test status:
+- Focused DatasetBundle tests: **15 passed**
+- Full backend suite: pending final run
+
 Remaining before Prototype 2.2:
 - Production-scale data layout and query performance tuning, richer dataset identity/grouping, and operational monitoring.
 - Downloading, scheduled jobs, distributed caching, cloud storage, and frontend real-data visualization remain out of scope.

@@ -6,6 +6,7 @@ import pytest
 xr = pytest.importorskip('xarray')
 
 from app.repositories.copernicus_netcdf_repository import CopernicusNetCDFRepository
+from app.models.dataset_bundle import DatasetBundle
 from app.core.config import Settings
 from app.repositories.factory import create_repository
 from app.repositories.netcdf_registry import NetCDFDatasetRegistry
@@ -187,7 +188,9 @@ def test_registry_registers_both_current_components_from_one_file(tmp_path, loca
     registry = NetCDFDatasetRegistry(tmp_path)
     registry.discover()
 
-    assert {dataset.variable for dataset in registry.datasets if dataset.path == path} == {'current_u', 'current_v'}
+    bundles = [dataset for dataset in registry.datasets if dataset.path == path]
+    assert len(bundles) == 1
+    assert set(bundles[0].available_variables) == {'current_u', 'current_v'}
 
 
 def test_factory_discovers_data_directory_without_explicit_filenames(tmp_path, local_copernicus_files):
@@ -198,6 +201,7 @@ def test_factory_discovers_data_directory_without_explicit_filenames(tmp_path, l
     repository = create_repository(Settings(ocean_provider='copernicus', copernicus_data_dir=str(tmp_path)))
     try:
         assert isinstance(repository, CopernicusNetCDFRepository)
+        assert all(isinstance(bundle, DatasetBundle) for bundle in repository.dataset_bundles)
         assert repository.get_ocean_records(parameter='temperature', depth=50)
     finally:
         repository.close()
@@ -245,3 +249,16 @@ def test_ocean_service_has_no_runtime_capability_detection():
     from app.services import ocean_data_service
 
     assert 'getattr(' not in inspect.getsource(ocean_data_service.OceanDataService)
+
+
+def test_bundle_identity_survives_registry_factory_and_repository(local_copernicus_files, tmp_path):
+    registry = NetCDFDatasetRegistry(local_copernicus_files['temperature'].parent)
+    bundles = registry.discover()
+    temperature_bundle = next(bundle for bundle in bundles if 'temperature' in bundle.variables)
+    repository = CopernicusNetCDFRepository(temperature_bundle)
+
+    assert repository.dataset_bundle is temperature_bundle
+    assert repository.dataset_bundle.dataset_id == temperature_bundle.dataset_id
+    assert repository.dataset_bundle.provider == 'Copernicus Marine'
+    assert repository.get_dataset_metadata()[0]['dataset_id'] == temperature_bundle.dataset_id
+    repository.close()

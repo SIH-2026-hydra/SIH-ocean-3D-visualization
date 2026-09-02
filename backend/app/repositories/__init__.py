@@ -13,11 +13,13 @@ from .exceptions import (
 from .factory import create_repository
 from .json_repository import JsonOceanRepository
 from .netcdf_registry import DatasetDescriptor, NetCDFDatasetRegistry
+from app.models.dataset_bundle import DatasetBundle
 
 __all__ = [
 	'BaseOceanRepository',
 	'CopernicusNetCDFRepository',
 	'DataUnavailableError',
+	'DatasetBundle',
 	'DatasetDescriptor',
 	'DatasetUnavailableError',
 	'InvalidProviderQueryError',

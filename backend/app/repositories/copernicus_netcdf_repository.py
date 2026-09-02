@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 from app.models.schemas import DatasetMetadata, ModelRecord
 from app.repositories.base import BaseOceanRepository
+from app.models.dataset_bundle import DatasetBundle
 from app.repositories.exceptions import (
     DatasetUnavailableError,
     InvalidProviderQueryError,
@@ -32,19 +33,61 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
 
     def __init__(
         self,
-        dataset_paths: Mapping[str, str | Path],
+        dataset: DatasetBundle | list[DatasetBundle] | Mapping[str, str | Path],
         *,
         dataset_id: str = 'copernicus-global-analysisforecast-phy-001-024',
         product: str = 'GLOBAL_ANALYSISFORECAST_PHY_001_024',
         model: str = 'Mercator Ocean GLO12',
     ) -> None:
-        self.dataset_paths = {
-            key: [Path(item) for item in value] if isinstance(value, (list, tuple)) else [Path(value)]
-            for key, value in dataset_paths.items()
-        }
-        self.dataset_id = dataset_id
-        self.product = product
-        self.model = model
+        if isinstance(dataset, list):
+            if not dataset:
+                raise ValueError('At least one DatasetBundle is required.')
+            self.dataset_bundles = tuple(dataset)
+            first = dataset[0]
+            source_files = {}
+            for bundle in dataset:
+                for field, paths in bundle.source_files.items():
+                    source_files[field] = source_files.get(field, ()) + tuple(paths)
+            self.dataset_bundle = DatasetBundle(
+                dataset_id=first.dataset_id,
+                provider=first.provider,
+                product=first.product,
+                model=first.model,
+                forecast_cycle=first.forecast_cycle,
+                variables=tuple(source_files),
+                coordinate_signature=first.coordinate_signature,
+                spatial_coverage=first.spatial_coverage,
+                temporal_coverage=first.temporal_coverage,
+                depth_levels=first.depth_levels,
+                source_files=source_files,
+                metadata={'bundles': dataset},
+            )
+        elif isinstance(dataset, DatasetBundle):
+            self.dataset_bundles = (dataset,)
+            self.dataset_bundle = dataset
+        else:
+            self.dataset_bundle = DatasetBundle(
+                dataset_id=dataset_id,
+                provider='Copernicus Marine',
+                product=product,
+                model=model,
+                forecast_cycle=None,
+                variables=tuple(dataset),
+                coordinate_signature=(),
+                spatial_coverage={},
+                temporal_coverage={},
+                depth_levels=(),
+                source_files={
+                    key: tuple(Path(item) for item in value) if isinstance(value, (list, tuple)) else (Path(value),)
+                    for key, value in dataset.items()
+                },
+                metadata={},
+            )
+            self.dataset_bundles = (self.dataset_bundle,)
+        self.dataset_paths = dict(self.dataset_bundle.source_files)
+        self.dataset_id = self.dataset_bundle.dataset_id
+        self.product = self.dataset_bundle.product
+        self.model = self.dataset_bundle.model
         self._datasets: dict[str, Any] = {}
 
     def _require_xarray(self) -> Any:
@@ -68,7 +111,6 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
             dataset = self._require_xarray().open_dataset(path)
         except RuntimeError as exc:
             raise ProviderUnavailableError(str(exc)) from exc
-        dataset = self._require_xarray().open_dataset(path)
         variable_name = self.VARIABLE_FILES[field][1]
         if variable_name not in dataset.data_vars:
             dataset.close()
@@ -107,8 +149,8 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
     def get_provider_capabilities(self) -> dict[str, Any]:
         metadata = self.get_dataset_metadata()
         return {
-            'provider': 'Copernicus Marine',
-            'available_parameters': ['temperature', 'salinity', 'current'],
+            'provider': self.dataset_bundle.provider,
+            'available_parameters': list(self.dataset_bundle.variables),
             'metadata': metadata,
             'depths': self._get_available_depths(),
             'timestamps': self._get_available_timestamps(),
@@ -142,10 +184,10 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         }
         timestamps = [self._serialize_timestamp(value) for value in coordinates.get('time', [])]
         metadata = DatasetMetadata(
-            dataset_id=self.dataset_id,
-            dataset_name=self.model,
+            dataset_id=self.dataset_bundle.dataset_id,
+            dataset_name=self.dataset_bundle.model,
             description='Copernicus Marine local NetCDF model data.',
-            source='Copernicus Marine',
+            source=self.dataset_bundle.provider,
             source_type='model',
             spatial_coverage=coverage,
             time_range={'start': timestamps[0], 'end': timestamps[-1]} if timestamps else {},
@@ -206,10 +248,10 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
                         record = {
                             'dataset_id': self.dataset_id,
                             'source_type': 'model',
-                            'source': 'Copernicus Marine',
-                            'provider': 'Copernicus Marine',
-                            'product': self.product,
-                            'model': self.model,
+                            'source': self.dataset_bundle.provider,
+                            'provider': self.dataset_bundle.provider,
+                            'product': self.dataset_bundle.product,
+                            'model': self.dataset_bundle.model,
                             'is_synthetic': False,
                             'latitude': float(selections['latitude_values'][latitude_index]),
                             'longitude': float(selections['longitude_values'][longitude_index]),

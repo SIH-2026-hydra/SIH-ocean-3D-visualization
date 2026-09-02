@@ -142,3 +142,9 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - Replaced implicit provider capabilities with one explicit `BaseOceanRepository` contract implemented by JSON and Copernicus providers.
 - `OceanDataService` uses only formal provider methods; runtime `getattr()` capability detection was removed.
 - Added shared provider exceptions while preserving compatible API error behavior.
+
+## Prototype 2.1.5 Phase 2 milestone
+- Added `DatasetBundle` as the canonical scientific dataset identity model.
+- Registry discovery now stores bundles rather than per-variable path descriptors.
+- Factory and Copernicus repositories receive and retain bundles, including source files and metadata.
+- Existing explicit path construction remains compatible, and public API behavior is unchanged.
