@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.repositories.json_repository import JsonOceanRepository
+from app.dependencies import get_repository
 from app.services.bathymetry_service import BathymetryService
 
 router = APIRouter()
-repository = JsonOceanRepository()
+repository = get_repository()
 service = BathymetryService(repository)
 
 

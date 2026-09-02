@@ -130,3 +130,57 @@ Completed:
 
 Limitations:
 - This synthetic single-point diagnostic does not establish overall model or ML accuracy; aggregate MAE/RMSE, forecasting, and real-data integration remain out of scope.
+
+## Prototype 2.1 Phase 1 (Offline Copernicus provider foundation)
+
+Completed:
+- Added an unregistered `CopernicusNetCDFRepository` for local NetCDF files.
+- Normalized Copernicus `thetao`, `so`, `uo`, and `vo` to OCEANX model fields.
+- Added current-speed derivation, coordinate subsetting, nearest time/depth matching, requested/matched depth metadata, NaN-to-null handling, and real model provenance.
+- Added focused temporary-fixture tests with no network access.
+- Added `xarray` and `netCDF4` backend dependencies.
+
+Safety and scope:
+- Existing endpoints continue using `JsonOceanRepository`; Prototype 1 synthetic behavior is unchanged.
+- `real_data_test/`, NetCDF/Zarr files, credentials, and virtual environments remain ignored.
+- Dynamic downloading, provider activation, caching, real observations, and global production queries remain out of scope.
+
+Test status:
+- Focused provider tests: **4 passed**
+
+## Prototype 2.1 Phase 2 (Configurable provider integration)
+
+Completed:
+- Added `OCEAN_PROVIDER=json|copernicus` and local Copernicus path settings.
+- Centralized repository construction in the application dependency module.
+- Integrated provider-native nearest coordinate, time, and depth selection into `OceanDataService`.
+- Preserved the existing frontend API response shapes and made model provenance provider-aware.
+- Added factory, API switching, compatibility, and out-of-range integration tests.
+
+Scope:
+- JSON remains the default provider; no frontend changes were required.
+- Downloading, caching, background jobs, authentication, and global production datasets remain out of scope.
+
+Test status:
+- Full backend suite: **67 passed**
+
+## Prototype 2.1 Phase 3 (Local dataset pipeline)
+
+Completed:
+- Added automatic `*.nc` discovery from configurable `COPERNICUS_DATA_DIR`.
+- Added startup validation and a registry of dataset identifiers, filenames, normalized/source variables, coverage, timestamps, and depths.
+- Invalid or unsupported files are skipped with informative warnings.
+- Added request-aware multi-dataset candidate selection and path-keyed in-memory dataset reuse.
+- Preserved explicit Phase 2 file paths, JSON provider support, API schemas, and frontend compatibility.
+- Added registry, invalid-file, startup discovery, and multi-dataset tests.
+
+Startup flow:
+`Settings -> NetCDFDatasetRegistry.discover() -> repository factory -> shared repository -> services -> existing API routes`
+
+Test status:
+- Phase 3 provider/registry tests: **11 passed**
+- Full backend regression suite: **71 passed**
+
+Remaining before Prototype 2.2:
+- Production-scale data layout and query performance tuning, richer dataset identity/grouping, and operational monitoring.
+- Downloading, scheduled jobs, distributed caching, cloud storage, and frontend real-data visualization remain out of scope.

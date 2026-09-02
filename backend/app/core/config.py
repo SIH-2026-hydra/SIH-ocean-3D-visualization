@@ -10,6 +10,15 @@ class Settings(BaseSettings):
     host: str = '127.0.0.1'
     port: int = 8000
     frontend_origin: str = 'http://127.0.0.1:5173'
+    ocean_provider: str = 'json'
+    copernicus_temperature_path: str | None = None
+    copernicus_salinity_path: str | None = None
+    copernicus_current_u_path: str | None = None
+    copernicus_current_v_path: str | None = None
+    copernicus_data_dir: str | None = None
+    copernicus_file_pattern: str = '*.nc'
+    copernicus_validate_on_startup: bool = True
+    copernicus_log_level: str = 'INFO'
 
     model_config = SettingsConfigDict(
         env_file='.env',

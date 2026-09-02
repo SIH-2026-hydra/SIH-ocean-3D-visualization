@@ -4,11 +4,11 @@ import math
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.repositories.json_repository import JsonOceanRepository
+from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
 
 router = APIRouter()
-repository = JsonOceanRepository()
+repository = get_repository()
 service = OceanDataService(repository)
 
 
@@ -17,6 +17,10 @@ def _parse_optional_float(value: str | None, *, name: str) -> float | None:
         return None
     try:
         parsed = float(value)
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=503, detail='Configured ocean provider is unavailable.') from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f'{name} must be numeric.') from exc
     return parsed
@@ -110,6 +114,8 @@ def get_ocean(
         'current': 'm/s',
     }
 
+    dataset_metadata = service.get_dataset_metadata()
+    dataset = dataset_metadata[0] if dataset_metadata else {}
     return {
         'query': {
             'parameter': parameter,
@@ -123,8 +129,8 @@ def get_ocean(
         },
         'metadata': {
             'unit': unit_map[parameter],
-            'sourceType': 'model',
-            'isSynthetic': True,
+            'sourceType': dataset.get('source_type', 'model'),
+            'isSynthetic': bool(dataset.get('is_synthetic', True)),
             'count': len(records),
         },
         'data': records,
@@ -145,6 +151,8 @@ def get_ocean_point(
 
     try:
         point = service.get_ocean_point(latitude=lat, longitude=lon, depth=depth, timestamp=time)
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=503, detail='Configured ocean provider is unavailable.') from exc
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:

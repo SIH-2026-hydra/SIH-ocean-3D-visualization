@@ -4,11 +4,11 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.repositories.json_repository import JsonOceanRepository
+from app.dependencies import get_repository
 from app.services.observation_service import ObservationService
 
 router = APIRouter()
-service = ObservationService(JsonOceanRepository())
+service = ObservationService(get_repository())
 
 
 def parse_float(value: str | None, name: str) -> float | None:

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 
-from app.repositories.json_repository import JsonOceanRepository
+from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
 
 router = APIRouter()
-repository = JsonOceanRepository()
+repository = get_repository()
 service = OceanDataService(repository)
 
 
@@ -13,7 +13,9 @@ def get_metadata() -> dict[str, object]:
     try:
         records = service.get_dataset_metadata()
         discovery = service.get_ocean_discovery()
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=503, detail='Configured ocean provider is unavailable.') from exc
+    except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if not records:
@@ -23,7 +25,7 @@ def get_metadata() -> dict[str, object]:
         'metadata': {
             'count': len(records),
             'sourceType': 'dataset',
-            'isSynthetic': True,
+            'isSynthetic': bool(records[0].get('is_synthetic', True)) if records else True,
         },
         'discovery': discovery,
         'data': records,

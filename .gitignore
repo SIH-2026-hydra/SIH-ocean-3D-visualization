@@ -4,6 +4,7 @@
 
 .venv/
 venv/
+.copernicus-venv/
 __pycache__/
 *.py[cod]
 *.pyo
@@ -60,3 +61,11 @@ npm-debug.log*
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+
+
+# Real scientific data / local caches
+real_data_test/
+*.nc
+*.nc4
+*.zarr/

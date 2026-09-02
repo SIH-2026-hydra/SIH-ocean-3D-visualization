@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.repositories.json_repository import JsonOceanRepository
+from app.dependencies import get_repository
 from app.services.ocean_data_service import OceanDataService
 
 router = APIRouter()
-repository = JsonOceanRepository()
+repository = get_repository()
 service = OceanDataService(repository)
 
 
@@ -23,17 +23,23 @@ def get_model_records(
 
     try:
         records = service.get_model_records(depth=parsed_depth)
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=503, detail='Configured ocean provider is unavailable.') from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if not records:
         raise HTTPException(status_code=404, detail='No model records found for the requested depth.')
 
+    dataset_metadata = service.get_dataset_metadata()
+    dataset = dataset_metadata[0] if dataset_metadata else {}
     return {
         'metadata': {
             'count': len(records),
-            'sourceType': 'model',
-            'isSynthetic': True,
+            'sourceType': dataset.get('source_type', 'model'),
+            'isSynthetic': bool(dataset.get('is_synthetic', True)),
         },
         'data': records,
     }

@@ -7,7 +7,7 @@ SIH26067 - Web-Based Interactive 3D Visualization of Numerical Ocean Models and 
 Prototype 1 with backend foundation and frontend infrastructure.
 
 ## Current phase
-Prototype 1 Phase 9B complete: point-wise Model / Observation / ML comparison.
+Prototype 2.1 Phase 3: local Copernicus dataset discovery, validation, registry, and multi-dataset selection. JSON remains the default provider.
 
 ## Architecture
 - Frontend: React 18 + Vite 5 + CesiumJS 1.120 (global 3D Earth visualization)
@@ -78,7 +78,7 @@ All demo records are clearly marked as synthetic and intended for validation onl
 
 ## Known limitations
 - No real ocean APIs or external data integrations yet
-- No NetCDF/xarray processing yet
+- Copernicus NetCDF files can be discovered and validated from a configured local directory; downloading and caching are not implemented
 - No database layer or advanced analytics yet
 - Cesium globe rendering not yet implemented (reserved for next phase)
 - Frontend React components not yet written (reserved for separate frontend AI)
@@ -118,3 +118,22 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
 - The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.
 - Signed differences and absolute errors are point-wise diagnostics, not aggregate accuracy metrics; no MAE/RMSE or superiority claim is made.
+
+## Prototype 2.1 Phase 1 milestone
+- Added an unregistered `CopernicusNetCDFRepository` for locally staged Copernicus NetCDF files.
+- Normalizes `thetao`, `so`, `uo`, and `vo` to OCEANX model fields and derives current speed.
+- Supports offline coordinate bounds, nearest time/depth selection, requested versus matched depth, missing-value preservation, and real-data provenance.
+- The active JSON repository, FastAPI endpoints, frontend, synthetic observations, and prototype ML comparison remain unchanged.
+
+## Prototype 2.1 Phase 2 milestone
+- `OCEAN_PROVIDER=json|copernicus` selects the repository through centralized application dependencies.
+- `OceanDataService` delegates nearest real-data coordinate/time/depth selection to the Copernicus provider while retaining API serialization.
+- Existing frontend-facing response keys remain unchanged; model, ocean, and discovery provenance is derived from the selected dataset metadata.
+- JSON remains the default, and the frontend was not modified.
+
+## Prototype 2.1 Phase 3 milestone
+- Added `NetCDFDatasetRegistry` and `DatasetDescriptor` for startup discovery and validation of local NetCDF files.
+- Unsupported or invalid files are skipped with warnings; valid descriptors record provider, variable, coverage, time, depth, and filename metadata.
+- Copernicus repository candidates are selected by variable and requested coverage, with opened datasets reused by path for the application lifetime.
+- Provider selection, discovery, validation, and failures emit concise backend log records.
+- The API and frontend contracts remain unchanged, and explicit Phase 2 file-path configuration remains supported.

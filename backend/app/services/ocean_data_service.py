@@ -21,6 +21,9 @@ class OceanDataService:
         self.repository = repository
 
     def get_model_records(self, *, depth: float | None = None) -> list[dict]:
+        query = getattr(self.repository, 'query_ocean_records', None)
+        if query is not None:
+            return query(parameter=None, depth=depth)
         records = self.repository.get_model_records()
         if depth is not None:
             records = [record for record in records if record['depth'] == depth]
@@ -50,7 +53,7 @@ class OceanDataService:
                 'longitude': 'decimal degrees',
                 'time': 'UTC',
             },
-            'depths': [0.0, 50.0, 100.0, 200.0, 500.0],
+            'depths': self._get_available_depths(),
             'timestamps': self.get_available_timestamps(),
             'spatialCoverage': dataset.get('spatial_coverage', {
                 'min_latitude': -90.0,
@@ -64,9 +67,18 @@ class OceanDataService:
         }
 
     def get_available_timestamps(self) -> list[str]:
+        provider_timestamps = getattr(self.repository, 'get_available_timestamps', None)
+        if provider_timestamps is not None:
+            return provider_timestamps()
         records = self.repository.get_model_records()
         timestamps = sorted({record['timestamp'] for record in records})
         return [value if isinstance(value, str) else value.replace(microsecond=0).isoformat().replace('+00:00', 'Z') for value in timestamps]
+
+    def _get_available_depths(self) -> list[float]:
+        provider_depths = getattr(self.repository, 'get_available_depths', None)
+        if provider_depths is not None:
+            return provider_depths()
+        return [0.0, 50.0, 100.0, 200.0, 500.0]
 
     def filter_records(
         self,
@@ -128,17 +140,29 @@ class OceanDataService:
         if parameter not in self.VALID_PARAMETERS:
             raise ValueError(f'Unsupported parameter: {parameter}')
 
-        records = self.filter_records(
-            self.repository.get_model_records(),
-            parameter=parameter,
-            depth=depth,
-            timestamp=timestamp,
-            min_lat=min_lat,
-            max_lat=max_lat,
-            min_lon=min_lon,
-            max_lon=max_lon,
-            source=source,
-        )
+        query = getattr(self.repository, 'query_ocean_records', None)
+        if query is not None:
+            records = query(
+                parameter=parameter,
+                depth=depth,
+                timestamp=timestamp,
+                min_lat=min_lat,
+                max_lat=max_lat,
+                min_lon=min_lon,
+                max_lon=max_lon,
+            )
+        else:
+            records = self.filter_records(
+                self.repository.get_model_records(),
+                parameter=parameter,
+                depth=depth,
+                timestamp=timestamp,
+                min_lat=min_lat,
+                max_lat=max_lat,
+                min_lon=min_lon,
+                max_lon=max_lon,
+                source=source,
+            )
 
         if parameter == 'current':
             return [self._serialize_current_record(record) for record in records]
@@ -180,6 +204,11 @@ class OceanDataService:
             )
 
         time_value = self._normalize_timestamp(timestamp)
+        provider_point = getattr(self.repository, 'query_ocean_point', None)
+        if provider_point is not None:
+            matched = provider_point(latitude=lat, longitude=lon, depth=float(depth), timestamp=timestamp)
+            return self._build_point_response(lat, lon, matched)
+
         records = list(self.repository.get_model_records())
         candidates = [record for record in records if float(record['depth']) == float(depth)]
         if not candidates:
@@ -202,8 +231,11 @@ class OceanDataService:
             ),
         )
 
+        return self._build_point_response(lat, lon, matched)
+
+    def _build_point_response(self, latitude: float, longitude: float, matched: dict) -> dict:
         return {
-            'requestedLocation': {'latitude': lat, 'longitude': lon},
+            'requestedLocation': {'latitude': latitude, 'longitude': longitude},
             'matchedLocation': {
                 'latitude': float(matched['latitude']),
                 'longitude': float(matched['longitude']),
@@ -225,7 +257,7 @@ class OceanDataService:
                 'datasetId': matched.get('dataset_id'),
                 'sourceType': matched.get('source_type', 'model'),
                 'source': matched.get('source', 'demo-synthetic-model'),
-                'isSynthetic': True,
+                'isSynthetic': bool(matched.get('is_synthetic', True)),
             },
         }
 
