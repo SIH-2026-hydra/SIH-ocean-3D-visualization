@@ -64,6 +64,22 @@ def test_normalizes_variables_coordinates_depth_time_and_provenance(local_copern
     assert record['is_synthetic'] is False
 
 
+def test_vectorized_query_does_not_read_one_cell_at_a_time(local_copernicus_files, monkeypatch):
+    with CopernicusNetCDFRepository(local_copernicus_files) as repository:
+        monkeypatch.setattr(repository, '_value', lambda *args: pytest.fail('per-cell read used'))
+        records = repository.get_ocean_records(parameter='temperature', min_lat=10, max_lat=15)
+
+    assert records
+
+
+def test_netcdf_query_logs_execution_time(local_copernicus_files, caplog):
+    with CopernicusNetCDFRepository(local_copernicus_files) as repository:
+        with caplog.at_level('INFO'):
+            repository.get_ocean_records(parameter='temperature', min_lat=10, max_lat=10)
+
+    assert any('NetCDF query completed in' in message for message in caplog.messages)
+
+
 @pytest.mark.parametrize(
     ('coordinate', 'replacement'),
     [

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import math
+import logging
+from itertools import product
+from time import perf_counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -14,6 +17,8 @@ from app.repositories.exceptions import (
     InvalidProviderQueryError,
     ProviderUnavailableError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CopernicusNetCDFRepository(BaseOceanRepository):
@@ -90,6 +95,9 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         self.product = self.dataset_bundle.product
         self.model = self.dataset_bundle.model
         self._datasets: dict[str, Any] = {}
+        self._coordinate_names: dict[str, dict[str, str]] = {}
+        self._coordinate_names_by_dataset: dict[int, dict[str, str]] = {}
+        self._validated_dataset_groups: set[tuple[tuple[str, str], ...]] = set()
 
     def _require_xarray(self) -> Any:
         try:
@@ -116,6 +124,11 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         if variable_name not in dataset.data_vars:
             dataset.close()
             raise ValueError(f'NetCDF file for {field} does not contain variable {variable_name}.')
+        self._coordinate_names[cache_key] = {
+            name: self._coordinate_name(dataset, name)
+            for name in self.COORDINATE_NAMES
+        }
+        self._coordinate_names_by_dataset[id(dataset)] = self._coordinate_names[cache_key]
         self._datasets[cache_key] = dataset
         return dataset
 
@@ -123,6 +136,9 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         for dataset in self._datasets.values():
             dataset.close()
         self._datasets.clear()
+        self._coordinate_names.clear()
+        self._coordinate_names_by_dataset.clear()
+        self._validated_dataset_groups.clear()
 
     def __enter__(self) -> 'CopernicusNetCDFRepository':
         return self
@@ -212,6 +228,16 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
 
     def get_ocean_records(
         self,
+        **filters: Any,
+    ) -> list[dict[str, Any]]:
+        started = perf_counter()
+        try:
+            return self._get_ocean_records(**filters)
+        finally:
+            logger.info('NetCDF query completed in %.3f seconds', perf_counter() - started)
+
+    def _get_ocean_records(
+        self,
         *,
         parameter: str | None = None,
         depth: float | None = None,
@@ -238,44 +264,48 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
             max_lon=max_lon,
         )
         self._validate_selected_datasets(selected_paths)
+        coordinate_values = {
+            name: selections[f'{name}_values'][selections[name]]
+            for name in self.COORDINATE_NAMES
+        }
+        vectorized_values = {
+            field: self._vectorized_values(
+                self._dataset(field, selected_paths[field]),
+                field,
+                coordinate_values,
+            )
+            for field in fields
+        }
         records = []
-        for time_index in selections['time']:
-            for depth_index in selections['depth']:
-                for latitude_index in selections['latitude']:
-                    for longitude_index in selections['longitude']:
-                        values = {
-                            field: self._value(
-                                self._dataset(field, selected_paths[field]),
-                                field,
-                                selections['time_values'][time_index],
-                                selections['depth_values'][depth_index],
-                                selections['latitude_values'][latitude_index],
-                                selections['longitude_values'][longitude_index],
-                            )
-                            for field in fields
-                        }
-                        record = {
-                            'dataset_id': self.dataset_id,
-                            'source_type': 'model',
-                            'source': self.dataset_bundle.provider,
-                            'provider': self.dataset_bundle.provider,
-                            'product': self.dataset_bundle.product,
-                            'model': self.dataset_bundle.model,
-                            'is_synthetic': False,
-                            'latitude': float(selections['latitude_values'][latitude_index]),
-                            'longitude': float(selections['longitude_values'][longitude_index]),
-                            'depth': float(selections['depth_values'][depth_index]),
-                            'requested_depth': depth,
-                            'matched_depth': float(selections['depth_values'][depth_index]),
-                            'timestamp': self._serialize_timestamp(selections['time_values'][time_index]),
-                            'temperature': values.get('temperature'),
-                            'salinity': values.get('salinity'),
-                            'current_u': values.get('current_u'),
-                            'current_v': values.get('current_v'),
-                            'current_speed': self._current_speed(values.get('current_u'), values.get('current_v')),
-                        }
-                        normalized = ModelRecord.model_validate(record).model_dump(mode='json')
-                        records.append(normalized | {key: record[key] for key in ('requested_depth', 'matched_depth', 'provider', 'product', 'model', 'is_synthetic', 'current_speed')})
+        grid_shape = tuple(len(coordinate_values[name]) for name in self.COORDINATE_NAMES)
+        for flat_index, indexes in enumerate(product(*(range(size) for size in grid_shape))):
+            values = {
+                field: self._numeric_value(vectorized_values[field].reshape(-1)[flat_index])
+                for field in fields
+            }
+            time_index, depth_index, latitude_index, longitude_index = indexes
+            record = {
+                'dataset_id': self.dataset_id,
+                'source_type': 'model',
+                'source': self.dataset_bundle.provider,
+                'provider': self.dataset_bundle.provider,
+                'product': self.dataset_bundle.product,
+                'model': self.dataset_bundle.model,
+                'is_synthetic': False,
+                'latitude': float(coordinate_values['latitude'][latitude_index]),
+                'longitude': float(coordinate_values['longitude'][longitude_index]),
+                'depth': float(coordinate_values['depth'][depth_index]),
+                'requested_depth': depth,
+                'matched_depth': float(coordinate_values['depth'][depth_index]),
+                'timestamp': self._serialize_timestamp(coordinate_values['time'][time_index]),
+                'temperature': values.get('temperature'),
+                'salinity': values.get('salinity'),
+                'current_u': values.get('current_u'),
+                'current_v': values.get('current_v'),
+                'current_speed': self._current_speed(values.get('current_u'), values.get('current_v')),
+            }
+            normalized = ModelRecord.model_validate(record).model_dump(mode='json')
+            records.append(normalized | {key: record[key] for key in ('requested_depth', 'matched_depth', 'provider', 'product', 'model', 'is_synthetic', 'current_speed')})
         return records
 
     def _select_path(self, field: str, depth: float | None, timestamp: str | datetime | None, min_lat: float | None, max_lat: float | None, min_lon: float | None, max_lon: float | None) -> Path | None:
@@ -303,6 +333,9 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         return (parameter,)
 
     def _validate_selected_datasets(self, selected_paths: dict[str, Path]) -> None:
+        group_key = tuple((field, str(path)) for field, path in selected_paths.items())
+        if group_key in self._validated_dataset_groups:
+            return
         selected = [(field, self._dataset(field, path)) for field, path in selected_paths.items()]
         if not selected:
             return
@@ -316,6 +349,7 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
                 raise IncompatibleDatasetBundleError(
                     'Selected NetCDF files have incompatible coordinate definitions.'
                 )
+        self._validated_dataset_groups.add(group_key)
 
     def _coordinate_definition(self, dataset: Any) -> tuple[Any, ...]:
         definition = []
@@ -332,6 +366,25 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
         if coordinate == 'time':
             return CopernicusNetCDFRepository._normalize_datetime(value)
         return float(value)
+
+    def _vectorized_values(self, dataset: Any, field: str, coordinate_values: dict[str, Any]) -> Any:
+        coordinate_names = self._coordinate_names_by_dataset[id(dataset)]
+        indexers = {
+            coordinate_names[name]: values
+            for name, values in coordinate_values.items()
+            if coordinate_names[name] in dataset[self.VARIABLE_FILES[field][1]].dims
+        }
+        data = dataset[self.VARIABLE_FILES[field][1]].sel(indexers)
+        dimensions = tuple(coordinate_names[name] for name in self.COORDINATE_NAMES)
+        return data.transpose(*dimensions).values
+
+    @staticmethod
+    def _numeric_value(value: Any) -> float | None:
+        try:
+            numeric = float(value)
+            return numeric if math.isfinite(numeric) else None
+        except (TypeError, ValueError):
+            return None
 
     def _validate_query(self, filters: dict[str, Any]) -> None:
         latitude = filters.get('latitude')
@@ -399,6 +452,9 @@ class CopernicusNetCDFRepository(BaseOceanRepository):
             return None
 
     def _coordinate_name(self, dataset: Any, coordinate: str, *, required: bool = True) -> str | None:
+        cached = self._coordinate_names_by_dataset.get(id(dataset), {}).get(coordinate)
+        if cached is not None:
+            return cached
         name = next((candidate for candidate in self.COORDINATE_NAMES[coordinate] if candidate in dataset.coords or candidate in dataset.dims), None)
         if name is None and required:
             raise ValueError(f'NetCDF dataset is missing a {coordinate} coordinate.')
