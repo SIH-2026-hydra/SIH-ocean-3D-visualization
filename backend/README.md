@@ -106,6 +106,21 @@ This Phase 1 backend uses a deliberately small synthetic dataset in the Arabian 
 - GET /api/v1/model
 - GET /api/v1/observations
 - GET /api/v1/metadata
+- GET /api/v1/datasets
+- GET /api/v1/variables
+- GET /api/v1/coverage
+- GET /api/v1/capabilities
+
+## Dataset discovery
+
+Discovery endpoints are backed by the `DatasetBundle` objects retained by the registry and repository. `DiscoveryService` translates those bundles into public responses; it does not inspect NetCDF files, reconstruct coverage, or expose source paths.
+
+- `/api/v1/datasets` lists dataset identity, provider, product, model, forecast cycle, variables, coverage, depth levels, and public metadata.
+- `/api/v1/variables` lists raw and derived variables, units, source variables, and supported query dimensions.
+- `/api/v1/coverage` reports each bundle's stored spatial, temporal, and depth coverage.
+- `/api/v1/capabilities` reports backend-independent query, interval, sampling, derived-product, and provider capabilities.
+
+The discovery APIs form the canonical metadata source for clients and future providers. Existing model, ocean, observation, metadata, and prediction endpoints remain unchanged.
 
 ## Normalized data architecture
 

@@ -7,6 +7,7 @@ from app.api.v1.endpoints.model import router as model_router
 from app.api.v1.endpoints.ocean import router as ocean_router
 from app.api.v1.endpoints.observations import router as observations_router
 from app.api.v1.endpoints.predictions import router as predictions_router
+from app.api.v1.endpoints.discovery import router as discovery_router
 
 router = APIRouter()
 
@@ -17,3 +18,4 @@ router.include_router(ocean_router)
 router.include_router(observations_router)
 router.include_router(bathymetry_router)
 router.include_router(predictions_router)
+router.include_router(discovery_router)

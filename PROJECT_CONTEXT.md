@@ -114,6 +114,11 @@ Phase 6 temporal navigation now separates metadata-derived UTC date selection fr
 ## Next milestone
 Phase 7 will be reserved for the next extension after time exploration and its verification are complete.
 
+## Prototype 2.2 Phase 4 milestone
+- Added DatasetBundle-backed discovery APIs at `/api/v1/datasets`, `/api/v1/variables`, `/api/v1/coverage`, and `/api/v1/capabilities`.
+- DiscoveryService translates the repository's retained DatasetBundle objects into public catalog, variable, coverage, and capability responses without inspecting files or exposing paths.
+- Derived products are included in variable and capability discovery with their source variables and units; existing data APIs remain unchanged.
+
 ## Phase 9A / 9B milestone
 - A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
 - The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.

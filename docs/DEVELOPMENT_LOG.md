@@ -164,6 +164,20 @@ Scope:
 Test status:
 - Full backend suite: **67 passed**
 
+## Prototype 2.2 Phase 4 (Dataset catalog and discovery APIs)
+
+Completed:
+- Added DatasetBundle-backed `/api/v1/datasets`, `/api/v1/variables`, `/api/v1/coverage`, and `/api/v1/capabilities` endpoints.
+- Added `DiscoveryService` to translate retained registry bundles into public catalog and coverage responses without opening files or exposing paths.
+- Added raw and derived variable discovery, including units, query support, and derived source variables.
+- Preserved all existing routes, response payloads, provider abstractions, and scientific behavior.
+
+Discovery flow:
+`DatasetBundle registry -> repository -> DiscoveryService -> discovery API`
+
+Test status:
+- Full backend suite: **110 passed**
+
 ## Prototype 2.1 Phase 3 (Local dataset pipeline)
 
 Completed:
