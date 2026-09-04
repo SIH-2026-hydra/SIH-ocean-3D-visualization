@@ -152,7 +152,7 @@ Provider failures use the shared hierarchy in `app.repositories.exceptions`: `Pr
 
 ### Selecting the provider
 
-The default is `OCEAN_PROVIDER=json`. Set `OCEAN_PROVIDER=copernicus` and configure one or more `COPERNICUS_*_PATH` values in `.env`; see `.env.example`. API modules receive the single configured repository from `app.dependencies`. `OceanDataService` delegates nearest selection to the Copernicus provider and keeps the existing response serialization, so the frontend does not know which provider is active.
+The default is `OCEAN_PROVIDER=auto`: it selects valid locally staged Copernicus data first and uses the JSON development provider only when no valid local bundle is available. Set `OCEAN_PROVIDER=copernicus` to require real data at startup, or `OCEAN_PROVIDER=json` only for testing/development fixtures. Configure one or more `COPERNICUS_*_PATH` values or `COPERNICUS_DATA_DIR` in `.env`; see `.env.example`. API modules receive the single configured repository from `app.dependencies`. `OceanDataService` delegates nearest selection to the Copernicus provider and keeps the existing response serialization, so the frontend does not know which provider is active.
 
 Copernicus model data supplies model endpoints only. Observation and bathymetry collections remain empty unless separate providers are added later; the prototype predictor remains a separate experimental service. Missing provider files return a stable `503`, while out-of-range real point queries return `404`.
 

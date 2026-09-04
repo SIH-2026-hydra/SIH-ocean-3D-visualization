@@ -224,4 +224,12 @@ The frontend infrastructure is now complete. The next task is for a dedicated fr
 6. Implement API integration in `src/services/api.js`
 7. Build and verify the Phase 1 globe with initial Indian Ocean camera position and global navigation
 
+## Operational discovery integration
+
+The operational shell loads `/datasets`, `/variables`, `/coverage`, and `/capabilities` before configuring controls and layers. Dataset identity, provider, coverage, depths, times, units, raw/derived status, and supported query features come from these backend responses rather than frontend scientific constants.
+
+The active DatasetBundle is shown in the dataset information panel. Discovered raw and derived variables populate the parameter control; derived products use the same field renderer and discovered units. Coverage metadata supplies the ocean query bounds and globe home position, while capability metadata gates interval controls and viewport observation requests.
+
+This keeps the frontend provider-agnostic: future providers, variables, datasets, and derived products can appear through the discovery APIs without changing the visualization shell.
+
 Only then will backend API integration, ocean data visualization, and subsequent features follow.

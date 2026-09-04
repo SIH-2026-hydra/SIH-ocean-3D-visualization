@@ -85,7 +85,7 @@ class JsonOceanRepository(BaseOceanRepository):
         max_lon: float | None = None,
         source: str | None = None,
     ) -> list[dict[str, Any]]:
-        if parameter not in {'temperature', 'salinity', 'current', 'all'}:
+        if parameter not in {'temperature', 'salinity', 'current', 'current_u', 'current_v', 'all'}:
             raise InvalidProviderQueryError(f'Unsupported parameter: {parameter}')
         records = self.get_model_records()
         if depth is not None:

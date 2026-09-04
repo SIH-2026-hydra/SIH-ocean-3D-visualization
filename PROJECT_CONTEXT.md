@@ -124,6 +124,13 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - JSON and NOAA providers both retain canonical DatasetBundle metadata, so catalog, variables, coverage, and capabilities are provider-agnostic.
 - Provider selection remains configuration-driven through `OCEAN_PROVIDER`; provider lifecycle remains owned by application lifespan.
 
+## Indian Ocean Operational Platform Phase 1 milestone
+- Frontend discovery clients load dataset catalog, variables, coverage, and capabilities from the backend.
+- AppShell uses discovered metadata for active dataset context, variable controls, units, coverage bounds, globe home position, depth/time controls, and viewport requests.
+- Raw and derived products use the existing visualization layers; future backend additions can appear without hardcoded frontend scientific configuration.
+- `OCEAN_PROVIDER=auto` is the operational default: valid locally staged Copernicus bundles are selected automatically, while `json` remains an explicit development/test provider.
+- The operational shell presents OCEANX / Indian Ocean context, provider-derived status, DatasetBundle metadata, and future-observation readiness without prototype messaging when Copernicus is active.
+
 ## Phase 9A / 9B milestone
 - A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
 - The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.

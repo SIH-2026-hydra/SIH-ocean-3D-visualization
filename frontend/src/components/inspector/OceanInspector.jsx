@@ -24,10 +24,11 @@ const formatDifference = (value, digits = 2) => {
   return `${Number(value) >= 0 ? '+' : ''}${Number(value).toFixed(digits)}`;
 };
 
-export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, prediction, predictionUnavailableReason, selectedDepth, selectedTime, loading, error, onClose }) {
+export default function OceanInspector({ selectedLocation, pointData, bathymetry, bathymetryUnavailable, observation, prediction, predictionUnavailableReason, selectedDepth, selectedTime, selectedVariable = {}, operationalMode = false, loading, error, onClose }) {
   const requested = selectedLocation || pointData?.requestedLocation || {};
   const matched = pointData?.matchedLocation || {};
   const source = pointData?.source || {};
+  const selectedValue = selectedParameterValue(pointData?.model, selectedVariable.variable_name);
 
   const temperatureRows = useMemo(() => {
     const model = pointData?.model || {};
@@ -62,7 +63,7 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
       { label: 'Salinity', value: observation.salinity != null ? `${formatMetric(observation.salinity, 2)} PSU` : 'Unavailable' },
       { label: 'Current', value: current },
       { label: 'Quality', value: observation.quality || 'Unavailable' },
-      { label: 'Source', value: observation.is_synthetic ? 'Demo/Synthetic' : (observation.source || 'Unavailable') },
+      { label: 'Source', value: observation.is_synthetic ? 'Development fixture' : (observation.source || 'Unavailable') },
     ];
   }, [observation]);
 
@@ -74,7 +75,7 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
     return [
       { label: 'Depth', value: seafloor ? `${formatMetric(seafloor, 0)} m` : '—' },
       { label: 'Water Column', value: waterColumn ? `${formatMetric(waterColumn, 0)} m` : '—' },
-      { label: 'Source', value: bathymetry.is_synthetic ? 'Demo/Synthetic' : (bathymetry.source || '-') },
+      { label: 'Source', value: bathymetry.is_synthetic ? 'Development fixture' : (bathymetry.source || '-') },
     ];
   }, [bathymetry, pointData?.depth]);
 
@@ -153,6 +154,10 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
 
           <div className="ocean-inspector__section">
             <div className="ocean-inspector__section-head">MODEL STATE</div>
+            <div className="ocean-inspector__row">
+              <span>{selectedVariable.display_name || 'Selected variable'}</span>
+              <strong>{selectedValue == null ? '—' : `${formatMetric(selectedValue, 3)} ${selectedVariable.units || ''}`}</strong>
+            </div>
             {temperatureRows.map((metric) => (
               <div key={metric.label} className="ocean-inspector__row">
                 <span>{metric.label}</span>
@@ -204,7 +209,7 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
             <div className="ocean-inspector__section-head">SOURCE</div>
             <div className="ocean-inspector__row">
               <span>Model</span>
-              <strong>{source.sourceType || 'Model'} · {source.source || 'Demo/Synthetic'}</strong>
+              <strong>{source.sourceType || 'Model'} · {source.source || 'Provider unavailable'} · {source.datasetId || 'Dataset unavailable'}</strong>
             </div>
           </div>
 
@@ -215,10 +220,10 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
                 <span>{metric.label}</span>
                 <strong>{metric.value}</strong>
               </div>
-            )) : <div className="ocean-inspector__empty">No nearby observation available</div>}
+            )) : <div className="ocean-inspector__empty">{operationalMode ? 'Observation integration is ready for Argo and buoy feeds' : 'No nearby observation available'}</div>}
           </div>
 
-          <div className="ocean-inspector__section">
+          {!operationalMode && <div className="ocean-inspector__section">
             <div className="ocean-inspector__section-head">ML PREDICTION · EXPERIMENTAL</div>
             {predictionRows.length ? predictionRows.map((metric) => (
               <div key={metric.label} className="ocean-inspector__row">
@@ -226,8 +231,8 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
                 <strong>{metric.value}</strong>
               </div>
             )) : <div className="ocean-inspector__empty">{predictionUnavailableReason === 'below_seafloor' ? 'Unavailable below the local seafloor' : predictionUnavailableReason === 'outside_coverage' ? 'Unavailable outside prototype coverage' : 'Prediction unavailable'}</div>}
-          </div>
-          <div className="ocean-inspector__section">
+          </div>}
+          {!operationalMode && <div className="ocean-inspector__section">
             <div className="ocean-inspector__section-head">COMPARISON · REFERENCE: OBSERVATION</div>
             {comparison?.available ? comparison.metrics.map((metric) => (
               <div key={metric.parameter} className="ocean-inspector__comparison">
@@ -238,7 +243,7 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
                 {metric.closerEstimate && <div className="ocean-inspector__comparison-result">Closer to observation: {metric.closerEstimate === 'prediction' ? 'ML Prediction' : metric.closerEstimate === 'model' ? 'Model State' : 'Tie'}</div>}
               </div>
             )) : <div className="ocean-inspector__empty">{comparison?.reason === 'no_shared_measurements' ? 'No shared measured variables available for comparison' : 'No suitable observation available for comparison'}</div>}
-          </div>
+          </div>}
         </>
       )}
 
@@ -256,4 +261,14 @@ export default function OceanInspector({ selectedLocation, pointData, bathymetry
       )}
     </aside>
   );
+}
+
+function selectedParameterValue(model = {}, variable) {
+  if (variable === 'current_speed') return model.currentSpeed;
+  if (variable === 'current_direction') {
+    if (model.currentU == null || model.currentV == null) return null;
+    return (Math.atan2(Number(model.currentV), Number(model.currentU)) * 180 / Math.PI + 360) % 360;
+  }
+  if (variable === 'current') return model.currentSpeed;
+  return model[variable];
 }

@@ -135,6 +135,8 @@ def get_ocean(
         'temperature': '°C',
         'salinity': 'PSU',
         'current': 'm/s',
+        'current_u': 'm/s',
+        'current_v': 'm/s',
         'current_speed': 'm/s',
         'current_direction': 'degrees',
     }

@@ -192,6 +192,22 @@ Provider flow:
 Test status:
 - Full backend suite: **113 passed**
 
+## Indian Ocean Operational Platform Phase 1 (Complete frontend integration)
+
+Completed:
+- Added frontend clients for dataset, variable, coverage, and capability discovery APIs.
+- Replaced hardcoded parameter, depth/time fallback, and geographic query configuration with backend discovery state.
+- Added active DatasetBundle information panel with provider, product, forecast cycle, coverage, time, depth, and resolution context.
+- Added first-class discovered derived-product layers for current speed and direction while preserving raw variable layers and request behavior.
+- Updated legends and inspector context to use discovered variable names, units, dataset identity, provider, and provenance.
+
+Frontend flow:
+`Discovery APIs -> AppShell state -> controls/layers/legend/inspector -> existing ocean APIs`
+
+Test status:
+- Frontend tests: **10 passed**
+- Backend suite: **113 passed**
+
 ## Prototype 2.1 Phase 3 (Local dataset pipeline)
 
 Completed:
@@ -239,3 +255,12 @@ Test status:
 Remaining before Prototype 2.2:
 - Production-scale data layout and query performance tuning, richer dataset identity/grouping, and operational monitoring.
 - Downloading, scheduled jobs, distributed caching, cloud storage, and frontend real-data visualization remain out of scope.
+
+## Indian Ocean Operational Transition (Phase 1)
+
+Completed:
+- Changed the default provider policy to `auto`, which chooses validated local Copernicus NetCDF bundles before the JSON development provider.
+- Retained `OCEAN_PROVIDER=copernicus` as a strict real-data mode and `OCEAN_PROVIDER=json` as an explicit test/development mode.
+- Reframed the frontend as OCEANX, the Indian Ocean Operational Platform, with backend-derived provider and model context instead of prototype badges.
+- Kept DatasetBundle discovery as the sole source for the active dataset, coverage, time, depth, variables, units, and derived products.
+- Suppressed fixture observations and prototype predictions for a Copernicus session; the inspector instead marks the future Argo/buoy observation integration point.

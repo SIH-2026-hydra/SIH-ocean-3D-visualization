@@ -1,7 +1,7 @@
 import { createPointQuery } from '../utils/location.js';
 
 export const API_BASE_URL =
-  import.meta.env?.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1';
+  import.meta.env?.VITE_API_BASE_URL ?? '/api/v1';
 
 function buildQueryString(params) {
   const entries = Object.entries(params)
@@ -32,6 +32,11 @@ export async function getOceanData({
   minLon,
   maxLon,
   source,
+  minDepth,
+  maxDepth,
+  startTime,
+  endTime,
+  samplingFactor,
   signal,
 } = {}) {
   const query = buildQueryString({
@@ -43,6 +48,11 @@ export async function getOceanData({
     min_lon: minLon,
     max_lon: maxLon,
     source,
+    min_depth: minDepth,
+    max_depth: maxDepth,
+    start_time: startTime,
+    end_time: endTime,
+    sampling_factor: samplingFactor,
   });
 
   return requestJson(`${API_BASE_URL}/ocean${query}`, { signal });
@@ -68,4 +78,20 @@ export async function getOceanPoint(params = {}) {
 
 export async function getOceanMetadata() {
   return requestJson(`${API_BASE_URL}/metadata`);
+}
+
+export async function getDatasetCatalog() {
+  return requestJson(`${API_BASE_URL}/datasets`);
+}
+
+export async function getVariableDiscovery() {
+  return requestJson(`${API_BASE_URL}/variables`);
+}
+
+export async function getCoverageDiscovery() {
+  return requestJson(`${API_BASE_URL}/coverage`);
+}
+
+export async function getCapabilityDiscovery() {
+  return requestJson(`${API_BASE_URL}/capabilities`);
 }

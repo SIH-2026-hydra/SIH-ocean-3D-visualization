@@ -11,7 +11,7 @@ from app.services.derived_products import DERIVED_PRODUCTS, calculate_derived_pr
 class OceanDataService:
     """Service layer for normalized ocean model queries and future-ready discovery metadata."""
 
-    VALID_PARAMETERS = {'temperature', 'salinity', 'current', *DERIVED_PRODUCTS}
+    VALID_PARAMETERS = {'temperature', 'salinity', 'current', 'current_u', 'current_v', *DERIVED_PRODUCTS}
     PARAMETER_TO_FIELD = {
         'temperature': 'temperature',
         'salinity': 'salinity',
@@ -203,7 +203,7 @@ class OceanDataService:
             records = self._sample_spatial_grid(records, sampling_factor)
 
         product = DERIVED_PRODUCTS.get(parameter)
-        units = {'temperature': '°C', 'salinity': 'PSU', 'current': 'm/s'}
+        units = {'temperature': '°C', 'salinity': 'PSU', 'current': 'm/s', 'current_u': 'm/s', 'current_v': 'm/s'}
         metadata = {
             'variable': parameter,
             'units': product['units'] if product else units[parameter],

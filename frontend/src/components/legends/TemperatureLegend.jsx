@@ -1,11 +1,11 @@
 import { formatTemperature, getTemperatureScaleStops } from '../../utils/temperatureColorScale';
 import { getSalinityScaleStops } from '../../utils/salinityColorScale';
 
-export default function TemperatureLegend({ min, max, selectedDepth, timestamp, provenance, parameter = 'temperature', unit = '°C' }) {
+export default function TemperatureLegend({ min, max, selectedDepth, timestamp, provenance, parameter = 'temperature', unit = '', label }) {
   const isSalinity = parameter === 'salinity';
   const isCurrent = parameter === 'current';
   const stops = isSalinity ? getSalinityScaleStops() : getTemperatureScaleStops();
-  const title = isCurrent ? 'Current' : isSalinity ? 'Salinity' : 'Temperature';
+  const title = label || (isCurrent ? 'Current' : isSalinity ? 'Salinity' : parameter);
 
   const legendStyle = {
     position: 'absolute',
@@ -61,7 +61,7 @@ export default function TemperatureLegend({ min, max, selectedDepth, timestamp, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(153,214,238,.12)', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(194,219,230,.82)' }}>
-        <span>Demo/Synthetic</span>
+        <span>Model data</span>
         <span>{provenance}</span>
       </div>
     </div>

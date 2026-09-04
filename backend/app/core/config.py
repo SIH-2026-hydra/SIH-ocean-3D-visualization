@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     host: str = '127.0.0.1'
     port: int = 8000
     frontend_origin: str = 'http://127.0.0.1:5173'
-    ocean_provider: str = 'json'
+    # Prefer locally staged operational data. JSON remains available when it is
+    # explicitly selected for fixtures and development.
+    ocean_provider: str = 'auto'
     copernicus_temperature_path: str | None = None
     copernicus_salinity_path: str | None = None
     copernicus_current_u_path: str | None = None

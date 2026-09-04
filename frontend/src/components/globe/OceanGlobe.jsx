@@ -13,9 +13,9 @@ import {
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-const HOME = Object.freeze({ longitude: 78, latitude: -7, height: 8_400_000 });
+const DEFAULT_HOME = Object.freeze({ longitude: 0, latitude: 0, height: 18_000_000 });
 
-const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
+const OceanGlobe = forwardRef(function OceanGlobe({ onReady, homeLocation = DEFAULT_HOME }, ref) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -24,7 +24,7 @@ const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
     viewer.camera.flyTo({
-      destination: Cartesian3.fromDegrees(HOME.longitude, HOME.latitude, HOME.height),
+      destination: Cartesian3.fromDegrees(homeLocation.longitude, homeLocation.latitude, homeLocation.height),
       orientation: { heading: 0, pitch: CesiumMath.toRadians(-88), roll: 0 },
       duration,
     });
@@ -95,7 +95,7 @@ const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
       viewer.scene.screenSpaceCameraController.maximumZoomDistance = 45_000_000;
       viewer.scene.globe.enableLighting = false;
       viewer.camera.setView({
-        destination: Cartesian3.fromDegrees(HOME.longitude, HOME.latitude, HOME.height),
+        destination: Cartesian3.fromDegrees(homeLocation.longitude, homeLocation.latitude, homeLocation.height),
         orientation: { heading: 0, pitch: CesiumMath.toRadians(-88), roll: 0 },
       });
       setReady(true);
@@ -111,7 +111,7 @@ const OceanGlobe = forwardRef(function OceanGlobe({ onReady }, ref) {
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
       if (viewerRef.current === viewer) viewerRef.current = null;
     };
-  }, [onReady]);
+  }, [homeLocation.height, homeLocation.latitude, homeLocation.longitude, onReady]);
 
   return (
     <div className="globe-stage" aria-label="Interactive global 3D Earth">

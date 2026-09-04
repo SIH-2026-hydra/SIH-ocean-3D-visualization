@@ -69,6 +69,14 @@ def test_raw_current_response_remains_vector_compatible():
     assert 'speed' in payload['data'][0]
 
 
+def test_discovered_raw_current_components_remain_queryable():
+    for parameter in ('current_u', 'current_v'):
+        response = client.get(f'/api/v1/ocean?parameter={parameter}&depth=0')
+        assert response.status_code == 200
+        assert response.json()['data']
+        assert all('value' in item for item in response.json()['data'])
+
+
 def test_ocean_depth_filter():
     response = client.get('/api/v1/ocean?parameter=temperature&depth=200')
     assert response.status_code == 200

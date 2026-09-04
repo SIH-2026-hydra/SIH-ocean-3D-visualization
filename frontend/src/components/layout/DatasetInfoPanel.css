@@ -1,0 +1,42 @@
+.dataset-info {
+  position: absolute;
+  left: 24px;
+  top: 104px;
+  z-index: 12;
+  width: 282px;
+  padding: 12px;
+  max-height: min(300px, calc(100dvh - 180px));
+  overflow: auto;
+  border-radius: 14px;
+  color: #dff7fb;
+}
+
+.dataset-info__eyebrow {
+  color: #74d8df;
+  font-size: 9px;
+  letter-spacing: .16em;
+}
+
+.dataset-info h2 {
+  margin: 6px 0 12px;
+  color: #f2ffff;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.dataset-info__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid rgba(157, 230, 244, .1);
+  font-size: 10px;
+}
+
+.dataset-info__row span { color: #89aeb9; }
+.dataset-info__row strong { color: #e7fbff; text-align: right; font-weight: 600; }
+
+@media (max-width: 760px) {
+  .dataset-info { left: 12px; top: 104px; width: 230px; max-height: 250px; }
+  .dataset-info__row { font-size: 9px; }
+}
