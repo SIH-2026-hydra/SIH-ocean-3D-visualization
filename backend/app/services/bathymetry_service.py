@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.core.config import settings
 from app.repositories.base import BaseOceanRepository
 
 
@@ -13,7 +14,16 @@ class BathymetryService:
 
     def get_bathymetry_records(self) -> list[dict]:
         """Get all bathymetry records."""
+        if not self._repository_ready():
+            return []
         return self.repository.get_bathymetry_records()
+
+    def _repository_ready(self) -> bool:
+        provider_ready = self.repository.provider_ready
+        return provider_ready or not (
+            settings.ocean_provider.lower().strip() == 'auto'
+            and settings.copernicus_acquisition_enabled
+        )
 
     def filter_records(
         self,

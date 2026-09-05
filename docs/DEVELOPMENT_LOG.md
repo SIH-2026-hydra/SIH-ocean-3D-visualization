@@ -264,3 +264,53 @@ Completed:
 - Reframed the frontend as OCEANX, the Indian Ocean Operational Platform, with backend-derived provider and model context instead of prototype badges.
 - Kept DatasetBundle discovery as the sole source for the active dataset, coverage, time, depth, variables, units, and derived products.
 - Suppressed fixture observations and prototype predictions for a Copernicus session; the inspector instead marks the future Argo/buoy observation integration point.
+
+## Indian Ocean Operational Platform Sprint 2 (Operational Data Management)
+
+Completed:
+- Added an on-demand Operational Data Manager before Copernicus queries.
+- Added provider/product/forecast-cycle/spatial/temporal cache matching, subset acquisition, NetCDF validation, and registry registration.
+- Added repository refresh after successful registration so the existing query engine serves newly validated bundles without API changes.
+- Added cache miss, cache hit, repeated request, spatial/temporal miss, registry, and serving regression tests.
+
+Scope:
+- Acquisition is opt-in and uses the Copernicus client only when enabled; no scheduled work, background worker, observation ingestion, or global download was added.
+
+## Indian Ocean Operational Platform Sprint 3 (Request-Driven Data Management)
+
+Completed:
+- Replaced whole-Indian-Ocean automatic activation with request-addressable validated subsets.
+- Extended the operational request and cache checks with depth range and requested source-resolution identity alongside provider, product, variables, viewport, time, and forecast cycle.
+- Removed regional default acquisition: an enabled operational request must provide explicit viewport bounds.
+- Added regression coverage for repeated viewport reuse, progressive viewport growth, temporal changes, depth changes, and request-dimension propagation.
+
+## Indian Ocean Operational Platform Sprint 4 (Scientific Acquisition Framework)
+
+Completed:
+- Added provider-neutral scientific acquisition requests and an adapter-dispatching Acquisition Manager.
+- Moved Copernicus SDK import, SDK request translation, provider dataset selection, and runtime error handling into a dedicated Copernicus adapter.
+- Updated OperationalDataManager to delegate acquisition while retaining cache lookup, NetCDF validation, DatasetBundle registration, registry ownership, and repository refresh.
+- Added framework dispatch, unknown-provider, Copernicus translation, provider-isolation, and runtime-failure tests.
+
+## Indian Ocean Operational Platform Sprint 4.1 (Scientific Acquisition Runtime Completion)
+
+Completed:
+- Added automatic cache-directory creation and an atomic persistent manifest for validated DatasetBundles.
+- Added deterministic request identity and concise cache/acquisition/validation/registration/refresh diagnostics.
+- Restored cache bundles on manager restart without NetCDF revalidation or repeat acquisition.
+- Added rollback of tentative registry entries when acquired data cannot satisfy the triggering request; failed acquisitions leave the persistent manifest untouched.
+
+## Indian Ocean Operational Platform Sprint 4.2 (Request-Driven Runtime Activation)
+
+Completed:
+- Removed automatic provider selection and NetCDF discovery from `auto` startup when acquisition is enabled.
+- Startup now reports ready and waits for scientific requests with no provider bound.
+- OperationalDataManager remains the first-request activation path; only after it resolves cache/acquisition and registry registration is the normal query repository bound.
+- Explicit JSON/Copernicus/NOAA selection and disabled-acquisition development behavior remain unchanged.
+
+## Indian Ocean Operational Platform Sprint 4.5 (Backend Request-Driven Migration Completion)
+
+- Completed the endpoint audit for deferred-provider access.
+- Discovery, metadata, model, bathymetry, observation, and prediction paths now accept the intentionally unbound request-driven startup state.
+- Platform endpoints return capability data or an empty/not-yet-acquired result without triggering provider selection or acquisition.
+- Explicit viewport ocean requests remain responsible for cache/acquisition, registry, repository binding, and scientific queries.

@@ -156,6 +156,32 @@ The default is `OCEAN_PROVIDER=auto`: it selects valid locally staged Copernicus
 
 Copernicus model data supplies model endpoints only. Observation and bathymetry collections remain empty unless separate providers are added later; the prototype predictor remains a separate experimental service. Missing provider files return a stable `503`, while out-of-range real point queries return `404`.
 
+### Operational data management
+
+`OperationalDataManager` runs before Copernicus ocean queries when `COPERNICUS_ACQUISITION_ENABLED=true`. It derives the required variables, explicit viewport, timestamp, depth range, and source-resolution requirement; searches the local cache; and reuses a DatasetBundle only when its provider, product, spatial coverage, temporal coverage, depth coverage, forecast cycle, and available resolution satisfy the request. On a miss it requests only that subset through the optional `copernicusmarine` client, validates the returned NetCDF files with `NetCDFDatasetRegistry`, registers the resulting bundles, and refreshes the configured repository. The query engine and API contracts continue to consume only validated bundles.
+
+The cache is progressive rather than regional: a validated Arabian Sea subset can serve later matching Arabian Sea requests, while a Bay of Bengal viewport, different time, or unsatisfied depth range becomes a separate subset request. The manager does not acquire a default Indian Ocean envelope; an enabled acquisition request requires explicit viewport bounds.
+
+### Scientific Acquisition Framework
+
+External data access is isolated under `app/acquisition/`. `OperationalDataManager` produces a provider-neutral scientific request and calls `AcquisitionManager`; the manager dispatches to a registered provider acquisition adapter. Adapters own SDK imports, credentials, provider dataset selection, request translation, downloads, and provider-specific errors. The Copernicus adapter is currently registered by default. Once it returns local files, normal registry validation, DatasetBundle registration, repository refresh, and existing query processing resume in the backend.
+
+Adding a provider requires an adapter implementing the acquisition contract; it does not require provider SDK imports in services, repositories, API routes, or the query engine.
+
+### Persistent acquisition cache runtime
+
+`COPERNICUS_CACHE_DIR` is the authoritative cache location and is created automatically. After registry validation succeeds, OCEANX atomically persists the validated DatasetBundle catalog in `.oceanx-operational-cache.json` in that directory. On restart, this manifest restores bundles directly when their source files remain present, avoiding repeated NetCDF validation and repeat acquisition.
+
+The deterministic cache identity includes provider, generic scientific product, forecast cycle, variables, viewport coverage, temporal coverage, depth coverage, and resolution. A cached bundle can serve a compatible subset request; otherwise the manager records a cache miss and acquires only the requested subset. Runtime logs record cache hit/miss, acquisition start/completion, validation, bundle registration, persistent-cache update, and repository refresh. Failed acquisitions never update the manifest; a successfully validated subset that still cannot satisfy its request is removed from the in-memory registry before the failure is returned.
+
+### Request-driven runtime activation
+
+With `OCEAN_PROVIDER=auto` and `COPERNICUS_ACQUISITION_ENABLED=true`, FastAPI startup prepares the deferred repository, acquisition manager, and persistent cache but does not select a provider, inspect NetCDF files, or contact Copernicus. The service reports ready while waiting for scientific requests. A viewport ocean request first reaches `OperationalDataManager`, which resolves the request from the cache or acquires and registers a subset. Only then is the regular Copernicus repository bound and used by the unchanged query engine. Explicit provider selections, or disabled acquisition, retain the existing startup behavior.
+
+Every route accepts this valid startup state. Discovery and metadata report platform capabilities before data is acquired; bathymetry and observation collections return no operational records until their own data is available; the prototype prediction endpoint uses the configured operational envelope. These routes never activate a scientific provider. Only an explicit viewport ocean request enters the cache, acquisition, registry, repository-binding, and query lifecycle.
+
+Set `COPERNICUS_CACHE_DIR` to a writable local cache directory. Acquisition is intentionally opt-in so local development and tests never make network calls or require credentials.
+
 ### Dataset discovery and registry
 
 When `OCEAN_PROVIDER=copernicus` and `COPERNICUS_DATA_DIR` is set, application startup scans `COPERNICUS_FILE_PATTERN` (default `*.nc`). Each file is opened once for validation, and invalid or unsupported files are skipped with warnings so one bad file cannot stop the backend. Valid files become `DatasetDescriptor` entries containing the dataset identifier, filename, provider, normalized variable, source variable, coverage, timestamps, and depths.

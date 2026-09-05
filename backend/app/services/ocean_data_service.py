@@ -3,9 +3,11 @@ from __future__ import annotations
 import math
 from datetime import datetime, timezone
 
+from app.core.config import settings
 from app.repositories.base import BaseOceanRepository
 from app.services.bathymetry_service import BathymetryService
 from app.services.derived_products import DERIVED_PRODUCTS, calculate_derived_product
+from app.services.operational_data_manager import OperationalDataManager
 
 
 class OceanDataService:
@@ -18,22 +20,50 @@ class OceanDataService:
         'current': 'current_u',
     }
 
-    def __init__(self, repository: BaseOceanRepository) -> None:
+    def __init__(self, repository: BaseOceanRepository, data_manager: OperationalDataManager | None = None) -> None:
         self.repository = repository
+        self.data_manager = data_manager
 
     def get_model_records(self, *, depth: float | None = None) -> list[dict]:
+        if self.awaiting_operational_request:
+            return []
         return self.repository.query_ocean_records(parameter='all', depth=depth)
 
     def get_observation_records(self, *, depth: float | None = None) -> list[dict]:
+        if self.awaiting_operational_request:
+            return []
         records = self.repository.get_observation_records()
         if depth is not None:
             records = [record for record in records if record['depth'] == depth]
         return records
 
     def get_dataset_metadata(self) -> list[dict]:
+        if self.awaiting_operational_request:
+            return []
         return self.repository.get_dataset_metadata()
 
     def get_ocean_discovery(self) -> dict:
+        if self.awaiting_operational_request:
+            return {
+                'parameters': ['temperature', 'salinity', 'current', *DERIVED_PRODUCTS],
+                'units': {
+                    'temperature': '°C', 'salinity': 'PSU', 'depth': 'm',
+                    'current_u': 'm/s', 'current_v': 'm/s', 'current_speed': 'm/s',
+                    'current_direction': 'degrees', 'latitude': 'decimal degrees',
+                    'longitude': 'decimal degrees', 'time': 'UTC',
+                },
+                'depths': [],
+                'timestamps': [],
+                'spatialCoverage': {
+                    'min_latitude': settings.copernicus_operational_min_latitude,
+                    'max_latitude': settings.copernicus_operational_max_latitude,
+                    'min_longitude': settings.copernicus_operational_min_longitude,
+                    'max_longitude': settings.copernicus_operational_max_longitude,
+                },
+                'dataset': 'operational-request-driven',
+                'synthetic': False,
+                'sourceType': 'operational',
+            }
         metadata = self.get_dataset_metadata()
         dataset = metadata[0] if metadata else {}
         return {
@@ -64,6 +94,8 @@ class OceanDataService:
         }
 
     def get_available_timestamps(self) -> list[str]:
+        if self.awaiting_operational_request:
+            return []
         capabilities = self.repository.get_provider_capabilities()
         provider_timestamps = capabilities.get('timestamps')
         if provider_timestamps is not None:
@@ -73,6 +105,8 @@ class OceanDataService:
         return [value if isinstance(value, str) else value.replace(microsecond=0).isoformat().replace('+00:00', 'Z') for value in timestamps]
 
     def _get_available_depths(self) -> list[float]:
+        if self.awaiting_operational_request:
+            return []
         provider_depths = self.repository.get_provider_capabilities().get('depths')
         if provider_depths is not None:
             return provider_depths
@@ -134,9 +168,17 @@ class OceanDataService:
         min_lon: float | None = None,
         max_lon: float | None = None,
         source: str | None = None,
+        acquisition_min_depth: float | None = None,
+        acquisition_max_depth: float | None = None,
+        acquisition_resolution: str | None = None,
     ) -> list[dict]:
         if parameter not in self.VALID_PARAMETERS:
             raise ValueError(f'Unsupported parameter: {parameter}')
+
+        self._ensure_operational_data(
+            parameter, min_lat, max_lat, min_lon, max_lon, timestamp, depth,
+            acquisition_min_depth, acquisition_max_depth, acquisition_resolution,
+        )
 
         records = self.repository.query_ocean_records(
             parameter='current' if parameter in DERIVED_PRODUCTS else parameter,
@@ -188,6 +230,8 @@ class OceanDataService:
             min_lon=min_lon,
             max_lon=max_lon,
             source=source,
+            acquisition_min_depth=min_depth,
+            acquisition_max_depth=max_depth,
         )
         if min_depth is not None:
             records = [record for record in records if float(record['depth']) >= min_depth]
@@ -255,6 +299,8 @@ class OceanDataService:
             raise ValueError('Longitude must be between -180 and 180 degrees.')
         if float(depth) < 0:
             raise ValueError('Depth must be greater than or equal to 0.')
+
+        self._ensure_operational_data('current', lat, lat, lon, lon, self._serialize_timestamp(timestamp), depth)
 
         metadata = self.get_dataset_metadata()
         coverage = metadata[0].get('spatial_coverage', {}) if metadata else {}
@@ -363,4 +409,44 @@ class OceanDataService:
         if current_u is None or current_v is None:
             return None
         return math.sqrt(float(current_u) ** 2 + float(current_v) ** 2)
+
+    def _ensure_operational_data(
+        self,
+        parameter: str,
+        min_lat: float | None,
+        max_lat: float | None,
+        min_lon: float | None,
+        max_lon: float | None,
+        timestamp: str | None,
+        depth: float | None = None,
+        min_depth: float | None = None,
+        max_depth: float | None = None,
+        resolution: str | None = None,
+    ) -> None:
+        if self.data_manager is not None:
+            self.data_manager.ensure_query(
+                parameter=parameter,
+                min_latitude=min_lat,
+                max_latitude=max_lat,
+                min_longitude=min_lon,
+                max_longitude=max_lon,
+                timestamp=timestamp,
+                depth=depth,
+                min_depth=min_depth,
+                max_depth=max_depth,
+                resolution=resolution,
+            )
+
+    @property
+    def repository_ready(self) -> bool:
+        """Whether a request has already bound the deferred scientific provider."""
+        return self.repository.provider_ready
+
+    @property
+    def awaiting_operational_request(self) -> bool:
+        return (
+            not self.repository_ready
+            and settings.ocean_provider.lower().strip() == 'auto'
+            and settings.copernicus_acquisition_enabled
+        )
 

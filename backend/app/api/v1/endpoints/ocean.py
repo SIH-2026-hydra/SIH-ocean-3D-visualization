@@ -4,7 +4,7 @@ import math
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.dependencies import get_repository
+from app.dependencies import get_operational_data_manager, get_repository
 from app.services.ocean_data_service import OceanDataService
 from app.models.schemas import OceanResponse
 from app.models.schemas import OceanPointResponse
@@ -12,7 +12,7 @@ from app.api.limits import enforce_response_limits
 
 router = APIRouter()
 repository = get_repository()
-service = OceanDataService(repository)
+service = OceanDataService(repository, get_operational_data_manager())
 
 
 def _parse_optional_float(value: str | None, *, name: str) -> float | None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.core.config import settings
 from app.models.dataset_bundle import DatasetBundle
 from app.repositories.base import BaseOceanRepository
 from app.services.derived_products import DERIVED_PRODUCTS
@@ -21,6 +22,8 @@ class DiscoveryService:
         self.repository = repository
 
     def dataset_bundles(self) -> tuple[DatasetBundle, ...]:
+        if not self._provider_ready():
+            return ()
         bundles = getattr(self.repository, 'dataset_bundles', ())
         return tuple(bundle for bundle in bundles if isinstance(bundle, DatasetBundle))
 
@@ -31,7 +34,7 @@ class DiscoveryService:
         available = {variable for bundle in self.dataset_bundles() for variable in bundle.available_variables}
         variables = []
         for variable, definition in self.RAW_VARIABLES.items():
-            if variable in available:
+            if not available or variable in available:
                 variables.append(self._variable(variable, definition, False, ()))
         variables.extend(
             self._variable(name, definition, True, definition['source_variables'])
@@ -56,14 +59,37 @@ class DiscoveryService:
     def capabilities(self) -> dict[str, Any]:
         providers = sorted({bundle.provider for bundle in self.dataset_bundles()})
         if not providers:
-            providers = [str(self.repository.get_provider_capabilities().get('provider', 'JSON'))]
+            providers = self._configured_providers()
         return {
             'query_types': ['viewport', 'point'],
             'interval_queries': {'depth': True, 'time': True},
             'sampling': True,
             'derived_products': list(DERIVED_PRODUCTS),
             'supported_providers': providers,
+            'runtime': {
+                'mode': 'request-driven' if settings.copernicus_acquisition_enabled else 'configured-provider',
+                'provider_ready': self._provider_ready(),
+                'acquisition_available': settings.copernicus_acquisition_enabled,
+                'cache_directory': settings.copernicus_cache_dir,
+            },
+            'operational_region': {
+                'min_latitude': settings.copernicus_operational_min_latitude,
+                'max_latitude': settings.copernicus_operational_max_latitude,
+                'min_longitude': settings.copernicus_operational_min_longitude,
+                'max_longitude': settings.copernicus_operational_max_longitude,
+            },
         }
+
+    def _provider_ready(self) -> bool:
+        """Avoid dereferencing the request-driven repository before a query binds it."""
+        return bool(getattr(self.repository, 'provider_ready', True))
+
+    @staticmethod
+    def _configured_providers() -> list[str]:
+        provider = settings.ocean_provider.lower().strip()
+        if provider in {'auto', 'copernicus'}:
+            return ['Copernicus Marine']
+        return [provider.upper()]
 
     @staticmethod
     def _serialize_bundle(bundle: DatasetBundle) -> dict[str, Any]:

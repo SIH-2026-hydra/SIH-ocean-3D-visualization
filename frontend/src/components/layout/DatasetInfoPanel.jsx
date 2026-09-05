@@ -12,7 +12,7 @@ export default function DatasetInfoPanel({ dataset, coverage, metadata }) {
   const time = dataset.temporal_coverage || {};
   return (
     <aside className="dataset-info glass-panel" aria-label="Scientific dataset information">
-      <div className="dataset-info__eyebrow">ACTIVE DATASET</div>
+      <div className="dataset-info__eyebrow">OPERATIONAL DATASET · LIVE LOCAL STAGING</div>
       <h2>{dataset.model || dataset.dataset_id}</h2>
       <div className="dataset-info__row"><span>Dataset</span><strong>{dataset.dataset_id}</strong></div>
       <div className="dataset-info__row"><span>Provider</span><strong>{dataset.provider}</strong></div>

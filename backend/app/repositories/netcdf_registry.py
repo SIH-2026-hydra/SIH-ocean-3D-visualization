@@ -49,6 +49,30 @@ class NetCDFDatasetRegistry:
     def by_variable(self, variable: str) -> list[DatasetBundle]:
         return [dataset for dataset in self.datasets if variable in dataset.available_variables]
 
+    def register(self, paths: list[Path] | tuple[Path, ...]) -> list[DatasetBundle]:
+        """Validate newly acquired files and add their bundles to this catalog."""
+        registered: list[DatasetBundle] = []
+        known_paths = {path for bundle in self.datasets for paths in bundle.source_files.values() for path in paths}
+        for path in paths:
+            try:
+                bundles = self._validate(path)
+            except (OSError, RuntimeError, ValueError) as exc:
+                logger.warning('Skipping invalid acquired NetCDF dataset %s: %s', path.name, exc)
+                continue
+            for bundle in bundles:
+                if bundle.path not in known_paths:
+                    self.datasets.append(bundle)
+                    registered.append(bundle)
+                    known_paths.add(bundle.path)
+                    logger.info('Registered acquired NetCDF dataset %s', path.name)
+        self.ready = True
+        return registered
+
+    def unregister(self, bundles: list[DatasetBundle]) -> None:
+        """Rollback registrations that did not satisfy their acquisition request."""
+        paths = {path for bundle in bundles for source_paths in bundle.source_files.values() for path in source_paths}
+        self.datasets = [bundle for bundle in self.datasets if bundle.path not in paths]
+
     def _validate(self, path: Path) -> list[DatasetBundle]:
         if not path.is_file():
             raise ValueError('not a regular file')
@@ -81,6 +105,14 @@ class NetCDFDatasetRegistry:
             timestamps = tuple(self._serialize_time(value) for value in dataset[coordinate_names['time']].values)
             depths = tuple(float(value) for value in dataset[coordinate_names['depth']].values)
             temporal_coverage = {'start': timestamps[0], 'end': timestamps[-1]} if timestamps else {}
+            forecast_cycle = next(
+                (
+                    str(dataset.attrs[key])
+                    for key in ('forecast_cycle', 'forecast_reference_time', 'analysis_time')
+                    if dataset.attrs.get(key) not in (None, '')
+                ),
+                None,
+            )
             source_files = {
                 self.SUPPORTED_VARIABLES[source_variable]: (path,)
                 for source_variable in source_variables
@@ -90,15 +122,19 @@ class NetCDFDatasetRegistry:
                     dataset_id=path.stem,
                     provider='Copernicus Marine',
                     product=str(dataset.attrs.get('product', 'GLOBAL_ANALYSISFORECAST_PHY_001_024')),
-                    model=str(dataset.attrs.get('model', 'Mercator Ocean GLO12')),
-                    forecast_cycle=dataset.attrs.get('forecast_cycle'),
+                    model=str(dataset.attrs.get('model') or dataset.attrs.get('source') or 'Mercator Ocean GLO12'),
+                    forecast_cycle=forecast_cycle,
                     variables=tuple(self.SUPPORTED_VARIABLES[item] for item in source_variables),
                     coordinate_signature=tuple((key, coordinate_names[key]) for key in self.COORDINATES),
                     spatial_coverage=coverage,
                     temporal_coverage=temporal_coverage,
                     depth_levels=depths,
                     source_files=source_files,
-                    metadata={'source_variables': {self.SUPPORTED_VARIABLES[item]: item for item in source_variables}, 'timestamps': timestamps},
+                    metadata={
+                        'source_variables': {self.SUPPORTED_VARIABLES[item]: item for item in source_variables},
+                        'timestamps': timestamps,
+                        'title': str(dataset.attrs.get('title', '')),
+                    },
                 )
             ][:1]
         finally:

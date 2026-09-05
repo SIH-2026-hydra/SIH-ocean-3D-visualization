@@ -193,6 +193,7 @@ def test_factory_selects_json_and_copernicus_without_api_changes(local_copernicu
     copernicus_repository = create_repository(Settings(
         ocean_provider='copernicus',
         copernicus_temperature_path=str(local_copernicus_files['temperature']),
+        copernicus_cache_dir=str(local_copernicus_files['temperature'].parent),
     ))
 
     assert json_repository.__class__.__name__ == 'JsonOceanRepository'
@@ -278,11 +279,39 @@ def test_factory_discovers_data_directory_without_explicit_filenames(tmp_path, l
         target = tmp_path / path.name
         target.write_bytes(path.read_bytes())
 
-    repository = create_repository(Settings(ocean_provider='copernicus', copernicus_data_dir=str(tmp_path)))
+    repository = create_repository(Settings(ocean_provider='copernicus', copernicus_data_dir=str(tmp_path), copernicus_cache_dir=str(tmp_path)))
     try:
         assert isinstance(repository, CopernicusNetCDFRepository)
         assert all(isinstance(bundle, DatasetBundle) for bundle in repository.dataset_bundles)
         assert repository.get_ocean_records(parameter='temperature', depth=50)
+    finally:
+        repository.close()
+
+
+def test_auto_provider_activates_valid_request_addressable_copernicus_coverage(tmp_path, local_copernicus_files):
+    validation_dir = tmp_path / 'validation'
+    validation_dir.mkdir()
+    validation_path = validation_dir / 'temperature.nc'
+    validation_path.write_bytes(local_copernicus_files['temperature'].read_bytes())
+
+    validation_repository = create_repository(Settings(ocean_provider='auto', copernicus_data_dir=str(validation_dir), copernicus_cache_dir=str(validation_dir), copernicus_acquisition_enabled=True))
+    assert isinstance(validation_repository, CopernicusNetCDFRepository)
+    validation_repository.close()
+
+    operational_dir = tmp_path / 'operational'
+    operational_dir.mkdir()
+    source = xr.open_dataset(local_copernicus_files['temperature'])
+    regional = source.assign_coords(latitude=[-30.0, 0.0, 30.0], longitude=[40.0, 72.5, 105.0])
+    regional.attrs['forecast_cycle'] = '2026-09-01T00:00:00Z'
+    regional.to_netcdf(operational_dir / 'regional_temperature.nc')
+    source.close()
+    regional.close()
+
+    repository = create_repository(Settings(ocean_provider='auto', copernicus_data_dir=str(operational_dir), copernicus_cache_dir=str(operational_dir)))
+    try:
+        assert isinstance(repository, CopernicusNetCDFRepository)
+        assert repository.dataset_bundle.forecast_cycle == '2026-09-01T00:00:00Z'
+        assert repository.get_ocean_records(parameter='temperature', depth=0.494025)
     finally:
         repository.close()
 

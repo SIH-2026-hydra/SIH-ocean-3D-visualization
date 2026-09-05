@@ -8,6 +8,11 @@ from typing import Any
 class BaseOceanRepository(ABC):
     """Explicit provider contract used by all backend data providers."""
 
+    @property
+    def provider_ready(self) -> bool:
+        """Concrete providers are ready; deferred runtime wrappers override this."""
+        return True
+
     @abstractmethod
     def query_ocean_records(
         self,

@@ -131,6 +131,43 @@ Phase 7 will be reserved for the next extension after time exploration and its v
 - `OCEAN_PROVIDER=auto` is the operational default: valid locally staged Copernicus bundles are selected automatically, while `json` remains an explicit development/test provider.
 - The operational shell presents OCEANX / Indian Ocean context, provider-derived status, DatasetBundle metadata, and future-observation readiness without prototype messaging when Copernicus is active.
 
+## Indian Ocean Operational Platform Phase 2 milestone
+
+- `OperationalDataManager` is the pre-query owner of Copernicus cache lookup, spatial/temporal subset acquisition, validation, DatasetBundle registration, and reuse.
+- Repositories continue to read only validated bundles; the query engine and public API contracts are unchanged.
+- Acquisition is explicitly enabled per environment and stores only the requested Indian Ocean subset in the local cache.
+
+## Indian Ocean Operational Platform Sprint 3 milestone
+
+- Operational data is now request-driven: viewport, variable set, timestamp, depth range, and requested source resolution form the cache-satisfaction unit.
+- With operational acquisition enabled, any validated local Copernicus subset is immediately request-addressable; no whole-region coverage gate remains. Disabled acquisition preserves the legacy staging fallback.
+- Cache reuse is progressive: revisiting a satisfied viewport is a cache hit, while a new viewport, time, depth range, or incompatible resolution acquires only the missing subset.
+
+## Indian Ocean Operational Platform Sprint 4 milestone
+
+- Added a provider-isolated Scientific Acquisition Framework with abstract scientific requests, an Acquisition Manager, and provider adapters.
+- OperationalDataManager owns cache and registry decisions but delegates all external acquisition to the framework.
+- Copernicus SDK imports, dataset selection, request translation, and provider errors are isolated in the Copernicus acquisition adapter.
+
+## Indian Ocean Operational Platform Sprint 4.1 milestone
+
+- The configured cache directory is created automatically and contains an atomically written persistent manifest of validated DatasetBundles.
+- Cache identity deterministically includes provider, generic scientific product, forecast cycle, variables, viewport, temporal/depth coverage, and resolution.
+- Restarted managers restore indexed bundles without NetCDF revalidation; failed acquisitions never update the manifest and roll back tentative registry registration.
+
+## Indian Ocean Operational Platform Sprint 4.2 milestone
+
+- In `OCEAN_PROVIDER=auto` with acquisition enabled, startup initializes only runtime infrastructure and leaves the scientific provider unbound.
+- The first viewport data request invokes OperationalDataManager cache evaluation and binds the normal Copernicus repository only after a cache hit or successful acquisition/registration.
+- Explicit providers and disabled acquisition retain their existing development fallback behavior.
+
+## Indian Ocean Operational Platform Sprint 4.5 milestone
+
+- Completed the request-driven backend migration audit for every API route.
+- Metadata, model, bathymetry, observation, and prediction services no longer dereference an unbound deferred provider.
+- Discovery and metadata expose platform state before data acquisition; non-viewport data collections report an empty or not-yet-acquired state.
+- Viewport ocean requests remain the only acquisition path: cache evaluation, acquisition when required, registry registration, provider binding, and query execution.
+
 ## Phase 9A / 9B milestone
 - A replaceable deterministic `PrototypePredictor` supplies experimental/synthetic point predictions independently of model state and observations.
 - The inspector compares model and prediction values to a valid nearby observation only, per variable and at one selected point.

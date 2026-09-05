@@ -20,14 +20,14 @@ def get_metadata() -> MetadataResponse:
     except ValueError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    if not records:
+    if not records and service.repository_ready:
         raise HTTPException(status_code=404, detail='No dataset metadata available.')
 
     payload = {
         'metadata': {
             'count': len(records),
             'sourceType': 'dataset',
-            'isSynthetic': bool(records[0].get('is_synthetic', True)) if records else True,
+            'isSynthetic': bool(records[0].get('is_synthetic', True)) if records else False,
         },
         'discovery': discovery,
         'data': records,

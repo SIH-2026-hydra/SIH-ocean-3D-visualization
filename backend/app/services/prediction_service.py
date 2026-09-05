@@ -6,6 +6,7 @@ import math
 from datetime import datetime, timezone
 from typing import Any
 
+from app.core.config import settings
 from app.repositories.base import BaseOceanRepository
 from app.services.bathymetry_service import BathymetryService
 
@@ -227,6 +228,14 @@ class PredictionService:
         return prediction, None
 
     def _is_within_model_coverage(self, latitude: float, longitude: float) -> bool:
+        if not self.repository.provider_ready and (
+            settings.ocean_provider.lower().strip() == 'auto'
+            and settings.copernicus_acquisition_enabled
+        ):
+            return (
+                settings.copernicus_operational_min_latitude <= latitude <= settings.copernicus_operational_max_latitude
+                and settings.copernicus_operational_min_longitude <= longitude <= settings.copernicus_operational_max_longitude
+            )
         metadata = self.repository.get_dataset_metadata()
         coverage = metadata[0].get('spatial_coverage', {}) if metadata else {}
         return (

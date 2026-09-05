@@ -423,7 +423,7 @@ export default function AppShell() {
           </div>
         </div>
         <div className="topbar-meta">
-          <div className="prototype-badge"><span className="status-pulse" />{isOperationalDataset ? 'Operational data' : 'Development data'}</div>
+          <div className="prototype-badge"><span className="status-pulse" />{isOperationalDataset ? 'Copernicus operational' : 'Development data'}</div>
           <div className="phase-chip"><span>Indian Ocean</span><b>{activeDataset?.provider || 'Connecting'}</b></div>
         </div>
       </header>

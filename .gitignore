@@ -69,3 +69,10 @@ real_data_test/
 *.nc
 *.nc4
 *.zarr/
+
+
+
+# Temporary Codex/agent test artifacts
+.codex-pytest*
+.codex-pytest-cache*
+.codex-pytest-temp*

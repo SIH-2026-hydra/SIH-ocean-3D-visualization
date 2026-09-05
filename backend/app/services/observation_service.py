@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from app.core.config import settings
 from app.repositories.base import BaseOceanRepository
 
 
@@ -34,7 +35,7 @@ class ObservationService:
         if parameter is not None and parameter not in self.VALID_PARAMETERS:
             raise ValueError(f'Unsupported observation parameter: {parameter}')
 
-        records = self.repository.get_observation_records()
+        records = self._records()
         if depth is not None:
             records = [record for record in records if float(record['depth']) == depth]
         if timestamp is not None:
@@ -59,7 +60,7 @@ class ObservationService:
 
     def find_nearest(self, *, latitude: float, longitude: float, depth: float, timestamp: datetime) -> dict[str, Any] | None:
         candidates = []
-        for record in self.repository.get_observation_records():
+        for record in self._records():
             distance = ((float(record['latitude']) - latitude) ** 2 + (float(record['longitude']) - longitude) ** 2) ** 0.5
             time_delta = abs(self.normalize_timestamp(record['timestamp']) - timestamp)
             depth_delta = abs(float(record['depth']) - depth)
@@ -68,6 +69,14 @@ class ObservationService:
         if not candidates:
             return None
         return min(candidates, key=lambda candidate: candidate[:3])[3]
+
+    def _records(self) -> list[dict[str, Any]]:
+        if not self.repository.provider_ready and (
+            settings.ocean_provider.lower().strip() == 'auto'
+            and settings.copernicus_acquisition_enabled
+        ):
+            return []
+        return self.repository.get_observation_records()
 
     @staticmethod
     def normalize_timestamp(value: str | datetime) -> datetime:

@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     copernicus_file_pattern: str = '*.nc'
     copernicus_validate_on_startup: bool = True
     copernicus_log_level: str = 'INFO'
+    copernicus_cache_dir: str = 'app/data/operational_cache'
+    copernicus_acquisition_enabled: bool = False
+    # A bundle must span this regional envelope before ``auto`` treats it as
+    # the operational Indian Ocean source. Small real-data extracts remain
+    # useful for explicit development validation, but must never be promoted
+    # to the default live platform dataset.
+    copernicus_operational_min_latitude: float = -30.0
+    copernicus_operational_max_latitude: float = 30.0
+    copernicus_operational_min_longitude: float = 40.0
+    copernicus_operational_max_longitude: float = 105.0
     max_response_cells: int = 100_000
     max_grid_dimension: int = 1_000
     max_response_size_bytes: int = 10_000_000

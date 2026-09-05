@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from app import dependencies
 from app.api.v1.endpoints import discovery
 from app.main import app
 from app.models.dataset_bundle import DatasetBundle
@@ -82,3 +83,26 @@ def test_discovery_endpoint_uses_service_catalog(monkeypatch):
     monkeypatch.setattr(discovery.service, 'catalog', lambda: [DiscoveryService(DiscoveryRepository([bundle('one')])).catalog()[0]])
     response = TestClient(app).get('/api/v1/datasets')
     assert response.json()['datasets'][0]['dataset_id'] == 'one'
+
+
+def test_discovery_is_available_before_request_driven_provider_activation(monkeypatch):
+    created = []
+    monkeypatch.setattr(dependencies.settings, 'ocean_provider', 'auto')
+    monkeypatch.setattr(dependencies.settings, 'copernicus_acquisition_enabled', True)
+    monkeypatch.setattr(dependencies, 'create_repository', lambda settings: created.append(True))
+    dependencies.close_repository()
+
+    with TestClient(app) as client:
+        datasets = client.get('/api/v1/datasets')
+        variables = client.get('/api/v1/variables')
+        coverage = client.get('/api/v1/coverage')
+        capabilities = client.get('/api/v1/capabilities')
+
+    assert datasets.status_code == variables.status_code == coverage.status_code == capabilities.status_code == 200
+    assert datasets.json()['datasets'] == []
+    assert coverage.json()['coverage'] == []
+    assert 'temperature' in {item['variable_name'] for item in variables.json()['variables']}
+    runtime = capabilities.json()['capabilities']['runtime']
+    assert runtime['mode'] == 'request-driven'
+    assert runtime['provider_ready'] is False
+    assert created == []
